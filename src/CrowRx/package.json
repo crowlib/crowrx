@@ -8,5 +8,10 @@
     },
     "unity": "6000.3",
     "description": "CrowRx project main package.",
-    "category": "Scripting"
+    "category": "Scripting",
+    "dependencies": {
+        "com.cysharp.r3": "1.3.0",
+        "com.cysharp.unitask": "2.5.10",
+        "com.cysharp.zlinq": "1.5.4"
+    }
 }
