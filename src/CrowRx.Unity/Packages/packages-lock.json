@@ -1,16 +1,5 @@
 {
   "dependencies": {
-    "com.crowlib.crowrx": {
-      "version": "https://github.com/crowlib/crowrx.git?path=src/CrowRx",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.cysharp.r3": "1.3.0",
-        "com.cysharp.unitask": "2.5.10",
-        "com.cysharp.zlinq": "1.5.4"
-      },
-      "hash": "624bf871dfc82cb40563022e085bdb7507b29bfe"
-    },
     "com.cysharp.r3": {
       "version": "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity",
       "depth": 0,
