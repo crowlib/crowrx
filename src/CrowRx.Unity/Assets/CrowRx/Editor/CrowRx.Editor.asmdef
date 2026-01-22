@@ -2,7 +2,7 @@
     "name": "CrowRx.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:760023d86f8ca394d8f3c741b1ffcb1a",
+        "GUID:d16bdc72de9240f4cb4d6d700c070e78",
         "GUID:77221876cc6b8244180b96e320b1bcd4",
         "GUID:f8c68d614fe30d647996098360b5e0d5"
     ],
