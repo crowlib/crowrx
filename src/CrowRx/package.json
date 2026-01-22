@@ -1,0 +1,12 @@
+{
+    "name": "com.crowlib.crowrx",
+    "version": "1.0.0",
+    "displayName": "CrowRx Main",
+    "author": {
+        "name": "Hory",
+        "url": "https://github.com/newhory"
+    },
+    "unity": "6000.3",
+    "description": "CrowRx project main package.",
+    "category": "Scripting"
+}
