@@ -49,7 +49,7 @@ namespace CrowRx.Tasks
             {
                 onException?.Invoke(ex);
 
-                Log.Exception(ex);
+                UnityLog.Exception(ex);
             }
         }
 
@@ -67,7 +67,7 @@ namespace CrowRx.Tasks
             {
                 onException?.Invoke(ex);
 
-                Log.Exception(ex);
+                UnityLog.Exception(ex);
             }
         }
     }

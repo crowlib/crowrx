@@ -4,51 +4,33 @@ using System;
 using System.Diagnostics;
 
 
-namespace CrowRx.Utility
+namespace CrowRx
 {
-    public interface ILogger
+    public interface IUnityLogger : ILogger
     {
-        void Info(string message);
-        void Info(object message, UnityEngine.Object context);
-
-        void Warning(string message);
-        void Warning(object message, UnityEngine.Object context);
-
-        void Error(string message);
-        void Error(object message, UnityEngine.Object context);
-
-        void Assertion(string message);
-        void Assertion(string message, UnityEngine.Object context);
-
-        void Exception(Exception exception);
-        void Exception(Exception exception, UnityEngine.Object context);
+        void Info(object message, UnityEngine.Object context) => UnityEngine.Debug.Log(message, context);
+        void Warning(object message, UnityEngine.Object context) => UnityEngine.Debug.LogWarning(message, context);
+        void Error(object message, UnityEngine.Object context) => UnityEngine.Debug.LogError(message, context);
+        void Assertion(string message, UnityEngine.Object context) => UnityEngine.Debug.LogAssertion(message, context);
+        void Exception(Exception exception, UnityEngine.Object context) => UnityEngine.Debug.LogException(exception, context);
     }
 
-    public static class Log
+    public static class UnityLog
     {
-        private class DefaultLogger : ILogger
+        private class DefaultLogger : IUnityLogger
         {
             void ILogger.Info(string message) => UnityEngine.Debug.Log(message);
-            void ILogger.Info(object message, UnityEngine.Object context) => UnityEngine.Debug.Log(message, context);
-
             void ILogger.Warning(string message) => UnityEngine.Debug.LogWarning(message);
-            void ILogger.Warning(object message, UnityEngine.Object context) => UnityEngine.Debug.LogWarning(message, context);
-
             void ILogger.Error(string message) => UnityEngine.Debug.LogError(message);
-            void ILogger.Error(object message, UnityEngine.Object context) => UnityEngine.Debug.LogError(message, context);
-
             void ILogger.Assertion(string message) => UnityEngine.Debug.LogAssertion(message);
-            void ILogger.Assertion(string message, UnityEngine.Object context) => UnityEngine.Debug.LogAssertion(message, context);
-
             void ILogger.Exception(Exception exception) => UnityEngine.Debug.LogException(exception);
-            void ILogger.Exception(Exception exception, UnityEngine.Object context) => UnityEngine.Debug.LogException(exception, context);
         }
 
 
-        private static ILogger _logger = new DefaultLogger();
+        private static IUnityLogger _logger = new DefaultLogger();
 
 
-        public static void SetLogger(ILogger logger)
+        public static void SetLogger(IUnityLogger logger)
         {
             if (logger is null)
             {
@@ -56,6 +38,8 @@ namespace CrowRx.Utility
             }
 
             _logger = logger;
+            
+            Log.SetLogger(_logger);
         }
 
         [Conditional("CROWRX_LOG_INFO"), Conditional("CROWRX_LOG_ALL"), Conditional("UNITY_EDITOR")]

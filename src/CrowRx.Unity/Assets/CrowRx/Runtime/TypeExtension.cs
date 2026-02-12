@@ -44,7 +44,7 @@ namespace CrowRx
                     sb.Append(',');
                 }
 
-                sb.Append(GetRealTypeName(arg));
+                sb.Append(arg.GetRealTypeName());
 
                 isAppendComma = true;
             }
@@ -77,7 +77,7 @@ namespace CrowRx
                     sb.Append(',');
                 }
 
-                sb.Append(GetRealTypeFullName(arg));
+                sb.Append(arg.GetRealTypeFullName());
 
                 isAppendComma = true;
             }

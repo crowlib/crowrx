@@ -23,12 +23,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    Log.Info($"[{nameof(RunSafe)}] Cancelled");
+                    UnityLog.Info($"[{nameof(RunSafe)}] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                Log.Exception(ex);
+                UnityLog.Exception(ex);
             }
         }
 
@@ -42,12 +42,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    Log.Info($"[{nameof(RunSafe)}<{typeof(T).Name}>] Cancelled");
+                    UnityLog.Info($"[{nameof(RunSafe)}<{typeof(T).Name}>] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                Log.Exception(ex);
+                UnityLog.Exception(ex);
             }
 
             return default;

@@ -126,11 +126,11 @@ namespace CrowRx
 
                 if (!_cachedTypesByName.TryAdd(typeName, type))
                 {
-                    Log.Warning($"Same Type Name : {typeName}\nold:{_cachedTypesByName[typeName]}\nnew:{type}");
+                    UnityLog.Warning($"Same Type Name : {typeName}\nold:{_cachedTypesByName[typeName]}\nnew:{type}");
                 }
             }
 
-            Log.Info($"Type Count : {_cachedTypesByName.Count}");
+            UnityLog.Info($"Type Count : {_cachedTypesByName.Count}");
         }
     }
 }

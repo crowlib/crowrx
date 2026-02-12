@@ -82,7 +82,7 @@ namespace CrowRx
                     }
                     else
                     {
-                        Log.Error($"{name} has no RectTransform Component.");
+                        UnityLog.Error($"{name} has no RectTransform Component.");
                     }
                 }
 

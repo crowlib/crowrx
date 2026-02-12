@@ -81,7 +81,7 @@ namespace CrowRx.Helper
             }
             catch (Exception e)
             {
-                Log.Exception(e);
+                UnityLog.Exception(e);
                 throw;
             }
         }
