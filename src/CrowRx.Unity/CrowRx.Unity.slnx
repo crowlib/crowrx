@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="CrowRx.csproj" />
+  <Project Path="CrowRx.Editor.csproj" />
+</Solution>
