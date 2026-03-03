@@ -12,13 +12,13 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("newhory")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyDescriptionAttribute("A core library for CrowRx.\r\nThis package is intended for use with Unity3D 6.0 or " +
-    "newer only.\t\t")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b0b8fc5f9c917c4d7d97f98b070e96d828e32971")]
+[assembly: System.Reflection.AssemblyDescriptionAttribute("A core library for CrowRx. This package is intended for use with Unity3D 6.0 or n" +
+    "ewer only.\t\t")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.2.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.2+2e624fadd7ae2248e622f5529e5b1b5b02a85da3")]
 [assembly: System.Reflection.AssemblyProductAttribute("CrowRx.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CrowRx")]
-[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.2.0")]
 
 // MSBuild WriteCodeFragment 클래스에서 생성되었습니다.
 

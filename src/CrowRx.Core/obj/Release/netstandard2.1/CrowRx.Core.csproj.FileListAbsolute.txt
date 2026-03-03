@@ -1,0 +1,10 @@
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\bin\Release\netstandard2.1\CrowRx.Core.deps.json
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\bin\Release\netstandard2.1\CrowRx.Core.dll
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\bin\Release\netstandard2.1\CrowRx.Core.pdb
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.AssemblyInfoInputs.cache
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.AssemblyInfo.cs
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.csproj.CoreCompileInputs.cache
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.sourcelink.json
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.dll
+D:\Project\personal\crowlib\crowrx\src\CrowRx.Core\obj\Release\netstandard2.1\CrowRx.Core.pdb
