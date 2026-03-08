@@ -4,9 +4,6 @@ using Cysharp.Threading.Tasks;
 
 namespace CrowRx.Tasks
 {
-    using Utility;
-
-
     public static partial class UniTaskExtension
     {
         public static void ForgetSafe(this UniTask task, bool useCancelLogging = false) => task.ForgetSafeAsync(useCancelLogging).Forget();
@@ -23,12 +20,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    UnityLog.Info($"[{nameof(ForgetSafe)}] Cancelled");
+                    Log.Info($"[{nameof(ForgetSafe)}] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
         }
 
@@ -42,12 +39,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    UnityLog.Info($"[{nameof(ForgetSafeAsync)}<{typeof(T).Name}>] Cancelled");
+                    Log.Info($"[{nameof(ForgetSafeAsync)}<{typeof(T).Name}>] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
 
             return default;

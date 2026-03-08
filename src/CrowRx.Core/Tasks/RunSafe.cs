@@ -5,9 +5,6 @@ using Cysharp.Threading.Tasks;
 
 namespace CrowRx.Tasks
 {
-    using Utility;
-
-
     public partial struct CrowTask
     {
         public static void RunSafe(Func<UniTask> taskFunc, CancellationToken token, bool useCancelLogging = false) => RunSafeAsync(taskFunc, token, useCancelLogging).Forget();
@@ -23,12 +20,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    UnityLog.Info($"[{nameof(RunSafe)}] Cancelled");
+                    Log.Info($"[{nameof(RunSafe)}] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
         }
 
@@ -42,12 +39,12 @@ namespace CrowRx.Tasks
             {
                 if (useCancelLogging)
                 {
-                    UnityLog.Info($"[{nameof(RunSafe)}<{typeof(T).Name}>] Cancelled");
+                    Log.Info($"[{nameof(RunSafe)}<{typeof(T).Name}>] Cancelled");
                 }
             }
             catch (Exception ex)
             {
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
 
             return default;

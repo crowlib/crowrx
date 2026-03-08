@@ -4,9 +4,6 @@ using Cysharp.Threading.Tasks;
 
 namespace CrowRx.Tasks
 {
-    using Utility;
-
-
     public static partial class UniTaskExtension
     {
         public static async UniTask ContinueWithAnyway(this UniTask task, Action onEnd) =>
@@ -49,7 +46,7 @@ namespace CrowRx.Tasks
             {
                 onException?.Invoke(ex);
 
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
         }
 
@@ -67,7 +64,7 @@ namespace CrowRx.Tasks
             {
                 onException?.Invoke(ex);
 
-                UnityLog.Exception(ex);
+                Log.Exception(ex);
             }
         }
     }
