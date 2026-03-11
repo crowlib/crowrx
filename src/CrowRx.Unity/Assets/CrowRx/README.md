@@ -1,15 +1,37 @@
-# CrowRx Base UPM Package
+# CrowRx Unity Base UPM Package
 
 The foundational Unity Package (UPM) for the CrowRx ecosystem, providing high-performance utilities, fluent APIs, and enhanced editor workflows.
 
-## Dependencies
+## Prerequisites
 
-- **UniTask**: Async/Await integration.
-- **R3**: Reactive extensions for Unity.
-- **ZLinq**: High-performance LINQ alternative.
-- **ZString**: Zero-allocation string formatting.
+Before installing this package, ensure the following dependencies are settled.
 
-## API Reference
+### 1. Install CrowRx.Core (Required)
+This package depends on `CrowRx.Core`. It is highly recommended to install it via [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+
+1. In the Unity Editor, go to `NuGet > Manage NuGet Packages`.
+2. Search for `CrowRx.Core` and install the latest version.
+
+### 2. External Dependencies (UPM)
+The following libraries must be present in your project:
+
+*   **[UniTask](https://github.com/Cysharp/UniTask)**: Efficient async/await integration for Unity.
+*   **[R3](https://github.com/Cysharp/R3)**: The next-generation reactive extensions for Unity.
+*   **[ZLinq](https://github.com/Cysharp/ZLinq)**: High-performance LINQ alternative with zero allocation.
+*   **[ZString](https://github.com/Cysharp/ZString)**: Zero-allocation string formatting.
+
+---
+
+## Installation (Unity Package Manager)
+
+1. Open `Window > Package Manager` in Unity.
+2. Click the `+` button in the top-left and select `Add package from git URL...`.
+3. Enter the following URL:
+   `https://github.com/crowlib/crowrx.git?path=src/CrowRx.Unity/Assets/CrowRx`
+
+---
+
+## Key Features (API Reference)
 
 ### 1. Core Extensions (`GameObject`, `Component`, `Transform`)
 Enhanced fluent APIs for common Unity operations.
@@ -20,7 +42,6 @@ Enhanced fluent APIs for common Unity operations.
 
 **Example:**
 ```csharp
-// Fluent chaining
 this.GetOrAddComponent<Rigidbody>()
     .SetParent(newParent)
     .SetLayer("Obstacle")
@@ -40,7 +61,7 @@ Optimized base classes with performance-centric caching.
 ```csharp
 public class PlayerController : MonoBehaviourCrowRx {
     void Update() {
-        // High-performance access to transform without caching manually
+        // High-performance access to transform without manual caching
         transform.position += Vector3.forward * Time.deltaTime;
     }
 }
@@ -51,8 +72,8 @@ public class PlayerController : MonoBehaviourCrowRx {
 ### 3. Async & Math Utilities (`Mathm`, `CrowTask`)
 Asynchronous interpolation and geometric calculation helpers.
 
-*   **`LerpAsync(setter, getter, start, end, duration, ...)`**: Frame-independent asynchronous Lerp using UniTask.
-*   **`SpringDampen(ref velocity, strength, deltaTime)`**: Frame-rate independent velocity dampening.
+*   **`LerpAsync(...)`**: Frame-independent asynchronous Lerp using UniTask.
+*   **`SpringDampen(...)`**: Frame-rate independent velocity dampening.
 *   **`RunSafe(taskFunc, token)`**: Executes a task with automatic exception handling and cancellation logging.
 
 **Example:**
@@ -77,13 +98,6 @@ Streamlined custom editor development and visual debugging tools.
 *   **`Debug.DrawCircle`, `DrawArc`, `DrawBox`**: Extended debug drawing methods for wireframes in Scene view.
 *   **`SerializeReferenceList`**: A specialized list wrapper and drawer for `[SerializeReference]` fields.
 
-**Example:**
-```csharp
-// In an Editor script
-Debug.DrawCircle(pos, rot, 5f, Color.green, 32);
-GizmosUtility.DrawWireCapsule(p1, p2, 0.5f);
-```
-
 ---
 
 ### 5. Task Extensions (`UniTaskExtension`)
@@ -91,13 +105,6 @@ Lifecycle and safety helpers for asynchronous tasks.
 
 *   **`ContinueWithAnyway(action)`**: Ensures an action runs regardless of whether the task succeeded, failed, or was canceled.
 *   **`ForgetSafe()`**: A fire-and-forget wrapper that logs exceptions but suppresses `OperationCanceledException`.
-
-**Example:**
-```csharp
-LoadAssetsAsync()
-    .ContinueWithAnyway(() => HideLoadingUI())
-    .ForgetSafe();
-```
 
 ## Requirements
 - **Unity 6000.3 or newer**
