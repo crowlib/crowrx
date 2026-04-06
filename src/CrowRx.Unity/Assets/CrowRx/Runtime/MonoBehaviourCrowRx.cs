@@ -3,14 +3,8 @@ using UnityEngine;
 using R3;
 using R3.Triggers;
 
-// ReSharper disable InconsistentNaming
-
-
 namespace CrowRx
 {
-    using Utility;
-
-
     public abstract class MonoBehaviourCrowRx : MonoBehaviour
     {
         private GameObject _gameObject;
@@ -22,22 +16,28 @@ namespace CrowRx
         private RectTransform _rectTransform;
         private IDisposable _disposableCacheRectTransform;
 
-
         public new GameObject gameObject
         {
             get
             {
-                if (_disposableCacheGameObject is null && this && base.gameObject)
+                if (_disposableCacheGameObject is null && this)
                 {
-                    _gameObject = base.gameObject;
+                    if (base.gameObject)
+                    {
+                        _gameObject = base.gameObject;
 
-                    _disposableCacheGameObject =
-                        this.OnDestroyAsObservable()
-                            .Subscribe(_ =>
-                            {
-                                _disposableCacheGameObject?.Dispose();
-                                _disposableCacheGameObject = null;
-                            });
+                        _disposableCacheGameObject =
+                            this.OnDestroyAsObservable()
+                                .Subscribe(this, static (_, monoBehaviourCrowRx) =>
+                                {
+                                    monoBehaviourCrowRx._disposableCacheGameObject?.Dispose();
+                                    monoBehaviourCrowRx._disposableCacheGameObject = null;
+                                });
+                    }
+                    else
+                    {
+                        _gameObject = null;
+                    }
                 }
 
                 return _gameObject;
@@ -48,17 +48,24 @@ namespace CrowRx
         {
             get
             {
-                if (_disposableCacheTransform is null && this && base.transform)
+                if (_disposableCacheTransform is null && this)
                 {
-                    _transform = base.transform;
+                    if (base.transform)
+                    {
+                        _transform = base.transform;
 
-                    _disposableCacheTransform =
-                        this.OnDestroyAsObservable()
-                            .Subscribe(_ =>
-                            {
-                                _disposableCacheTransform?.Dispose();
-                                _disposableCacheTransform = null;
-                            });
+                        _disposableCacheTransform =
+                            this.OnDestroyAsObservable()
+                                .Subscribe(this, static (_, monoBehaviourCrowRx) =>
+                                {
+                                    monoBehaviourCrowRx._disposableCacheTransform?.Dispose();
+                                    monoBehaviourCrowRx._disposableCacheTransform = null;
+                                });
+                    }
+                    else
+                    {
+                        _transform = null;
+                    }
                 }
 
                 return _transform;
@@ -69,20 +76,20 @@ namespace CrowRx
         {
             get
             {
-                if (_disposableCacheRectTransform is null && this && base.gameObject)
+                if (_disposableCacheRectTransform is null && this)
                 {
-                    if (TryGetComponent(out _rectTransform))
+                    if (base.gameObject && TryGetComponent(out _rectTransform))
                     {
                         _disposableCacheRectTransform = this.OnRectTransformRemovedAsObservable()
-                            .Subscribe(_ =>
+                            .Subscribe(this, static (_, monoBehaviourCrowRx) =>
                             {
-                                _disposableCacheRectTransform?.Dispose();
-                                _disposableCacheRectTransform = null;
+                                monoBehaviourCrowRx._disposableCacheRectTransform?.Dispose();
+                                monoBehaviourCrowRx._disposableCacheRectTransform = null;
                             });
                     }
                     else
                     {
-                        UnityLog.Error($"{name} has no RectTransform Component.");
+                        _rectTransform = null;
                     }
                 }
 
