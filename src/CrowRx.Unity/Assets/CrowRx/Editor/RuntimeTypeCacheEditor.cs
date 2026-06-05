@@ -3,8 +3,8 @@ namespace CrowRx.Editor
 {
     public static class RuntimeTypeCacheEditor
     {
-        [UnityEditor.Callbacks.DidReloadScripts(0)]
-		private static void OnScriptReload()
+        [UnityEditor.MenuItem("Tools/CrowRx/Runtime Type Cache/Gather Types")]
+        private static void GatherTypes()
         {
             RuntimeTypeCache.GatherTypes();
         }
