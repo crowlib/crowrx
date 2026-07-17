@@ -1,20 +1,13 @@
-// ReSharper disable InconsistentNaming
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace CrowRx
 {
-    using Utility;
-
-
     public static class RuntimeTypeCache
     {
         private static readonly List<Type> _cachedTypes = new();
         private static Dictionary<string, Type> _cachedTypesByName;
-        
 
         private static readonly string[] _exceptStartWithAssemblyNames =
         {
@@ -53,7 +46,6 @@ namespace CrowRx
             ".Examples."
         };
 
-
         public static IReadOnlyList<Type> Types
         {
             get
@@ -80,7 +72,6 @@ namespace CrowRx
             }
         }
 
-
         public static void GatherTypes()
         {
             _cachedTypes.Clear();
@@ -98,8 +89,8 @@ namespace CrowRx
                         string assemblyName = assembly.GetName().FullName;
 
                         return
-                            !_exceptStartWithAssemblyNames.Any(exceptAssemblyName => assemblyName.StartsWith(exceptAssemblyName)) &&
-                            !_exceptContainsAssemblyNames.Any(exceptAssemblyName => assemblyName.Contains(exceptAssemblyName));
+                            !_exceptStartWithAssemblyNames.Any(assemblyName.StartsWith) &&
+                            !_exceptContainsAssemblyNames.Any(assemblyName.Contains);
                     })
                     .SelectMany(assembly => assembly.GetTypes())
                     .Where(type =>
@@ -114,8 +105,8 @@ namespace CrowRx
                         string typeName = type.FullName;
 
                         return typeName is not null &&
-                               !_exceptStartWithTypeNames.Any(exceptAssemblyName => typeName.StartsWith(exceptAssemblyName)) &&
-                               !_exceptContainsTypeNames.Any(exceptAssemblyName => typeName.Contains(exceptAssemblyName));
+                               !_exceptStartWithTypeNames.Any(typeName.StartsWith) &&
+                               !_exceptContainsTypeNames.Any(typeName.Contains);
                     }));
 
             _cachedTypesByName = new Dictionary<string, Type>();

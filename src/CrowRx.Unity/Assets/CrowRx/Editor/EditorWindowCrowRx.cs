@@ -65,7 +65,7 @@ namespace CrowRx.Editor
 
 		public static TEditorWindow Open()
 		{
-			TEditorWindow result = default(TEditorWindow);
+			TEditorWindow result = default;
 			if (typeof(TEditorWindow).Name.Contains("Dialog"))
 			{
 				result = GetWindow<TEditorWindow>(utility: true, title: typeof(TEditorWindow).Name.Replace("Dialog", ""), focus: true);
@@ -117,7 +117,7 @@ namespace CrowRx.Editor
 			return value;
 		}
 
-		protected int FieldInt(int value, Color color = default(Color), bool box = false, string front_text = "", float width = 0)
+		protected int FieldInt(int value, Color color = default, bool box = false, string front_text = "", float width = 0)
 		{
 			int result = 0;
 
@@ -136,7 +136,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected float FieldFloat(float value, Color color = default(Color), bool box = false, string front_text = "", float width = 0, bool enable = true)
+		protected float FieldFloat(float value, Color color = default, bool box = false, string front_text = "", float width = 0, bool enable = true)
 		{
 			float result = 0f;
 
@@ -157,7 +157,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected Vector3 FieldVector3(Vector3 value, Color color = default(Color), bool box = false, string front_text = "", float width = 0)
+		protected Vector3 FieldVector3(Vector3 value, Color color = default, bool box = false, string front_text = "", float width = 0)
 		{
 			Vector3 result = Vector3.zero;
 
@@ -176,7 +176,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected Color FieldColor(Color value, Color color = default(Color), bool box = false, string front_text = "", float width = 0)
+		protected Color FieldColor(Color value, Color color = default, bool box = false, string front_text = "", float width = 0)
 		{
 			Color result = Color.white;
 
@@ -266,7 +266,7 @@ namespace CrowRx.Editor
 
 		#endregion
 
-		protected Enum Popup(Enum value, string front_text = "", float width = 0, Color color = default(Color), bool box = false, bool enable = true)
+		protected Enum Popup(Enum value, string front_text = "", float width = 0, Color color = default, bool box = false, bool enable = true)
 		{
 			Enum result = value;
 
@@ -287,7 +287,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected int Popup(int value, string[] content, string front_text = "", float width = 0, Color color = default(Color), bool box = false, bool enable = true)
+		protected int Popup(int value, string[] content, string front_text = "", float width = 0, Color color = default, bool box = false, bool enable = true)
 		{
 			int result = value;
 
@@ -308,7 +308,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected Type Popup(Type value, string[] content, string front_text = "", float width = 0, Color color = default(Color), bool box = false, bool enable = true)
+		protected Type Popup(Type value, string[] content, string front_text = "", float width = 0, Color color = default, bool box = false, bool enable = true)
 		{
 			int result = ArrayIndexOf(value.Name, content);
 
@@ -329,7 +329,7 @@ namespace CrowRx.Editor
 			return Type.GetType(content[result]);
 		}
 
-		protected string Popup(string value, string[] content, string front_text = "", float width = 0, Color color = default(Color), bool box = false, bool enable = true)
+		protected string Popup(string value, string[] content, string front_text = "", float width = 0, Color color = default, bool box = false, bool enable = true)
 		{
 			int result = ArrayIndexOf(value, content);
 
@@ -395,7 +395,7 @@ namespace CrowRx.Editor
 			}, color: color, box: box);
 		}
 
-		protected bool Toggle(bool value, string front_text = "", string rear_text = "", int width = 0, Color color = default(Color), bool box = false)
+		protected bool Toggle(bool value, string front_text = "", string rear_text = "", int width = 0, Color color = default, bool box = false)
 		{
 			bool result = value;
 
@@ -414,7 +414,7 @@ namespace CrowRx.Editor
 			return result;
 		}
 
-		protected bool Foldout(bool value, Action on_view = null, string front_text = "", string rear_text = "", int width = 0, Color color = default(Color), bool box = false)
+		protected bool Foldout(bool value, Action on_view = null, string front_text = "", string rear_text = "", int width = 0, Color color = default, bool box = false)
 		{
 			bool result = value;
 

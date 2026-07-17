@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text;
 
-
 namespace CrowRx
 {
     public static class TypeExtension

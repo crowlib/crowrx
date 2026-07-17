@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace CrowRx
 {
     public static class TransformExtension

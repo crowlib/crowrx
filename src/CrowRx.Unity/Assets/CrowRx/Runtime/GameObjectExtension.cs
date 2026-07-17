@@ -4,26 +4,25 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-
 namespace CrowRx
 {
     using Helper;
-
 
     public static class GameObjectExtension
     {
         public static bool ExecuteEventToParent<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor) where T : IEventSystemHandler
         {
             if (ExecuteEvents.CanHandleEvent<T>(target))
+            {
                 return ExecuteEvents.Execute(target, eventData, functor);
+            }
 
-            var parent = target.transform.parent;
+            Transform parent = target.transform.parent;
 
-            return parent && ExecuteEventToParent(parent.gameObject, eventData, functor);
+            return parent && parent.gameObject.ExecuteEventToParent(eventData, functor);
         }
 
-        public static bool ExecuteEventExceptThis<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor)
-            where T : IEventSystemHandler
+        public static bool ExecuteEventExceptThis<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor) where T : IEventSystemHandler
         {
             PointerEventData rayEventData = new(EventSystem.current)
             {
@@ -41,7 +40,9 @@ namespace CrowRx
                 GameObject hovered = raycastResult[i].gameObject;
 
                 if (hovered == target)
+                {
                     continue;
+                }
 
                 result |= hovered.ExecuteEventToParent(eventData, functor);
 
@@ -51,12 +52,8 @@ namespace CrowRx
             return result;
         }
 
-        public static TComponent GetOrAddComponent<TComponent>(this GameObject obj)
-            where TComponent : Component
-            => obj.TryGetComponent(out TComponent component) ? component : obj.AddComponent<TComponent>();
-
-        public static Component GetOrAddComponent(this GameObject obj, Type componentType) =>
-            obj.TryGetComponent(componentType, out var component) ? component : obj.AddComponent(componentType);
+        public static TComponent GetOrAddComponent<TComponent>(this GameObject obj) where TComponent : Component => obj.TryGetComponent(out TComponent component) ? component : obj.AddComponent<TComponent>();
+        public static Component GetOrAddComponent(this GameObject obj, Type componentType) => obj.TryGetComponent(componentType, out Component component) ? component : obj.AddComponent(componentType);
 
         public static bool GetAllComponentsInHierarchy<TComponent>(this GameObject obj, List<TComponent> components) => obj.transform.GetAllComponentsInHierarchy(components);
 
@@ -66,14 +63,15 @@ namespace CrowRx
 
         public static GameObject SetParent(this GameObject self, Transform transform)
         {
-            if (self && self.transform && ReferenceEquals(self.transform, transform) == false)
+            if (self && self.transform && !ReferenceEquals(self.transform, transform))
+            {
                 self.transform.SetParent(transform);
+            }
 
             return self;
         }
 
         public static GameObject SetParent(this GameObject self, GameObject parentObject) => parentObject ? self.SetParent(parentObject.transform) : self;
-
         public static GameObject SetParent(this GameObject self, Component component) => component ? self.SetParent(component.transform) : self;
 
         public static GameObject SetPosition(this GameObject self, Vector3 position)
@@ -116,7 +114,9 @@ namespace CrowRx
         public static GameObject SetLayer(this GameObject self, string layerName)
         {
             if (self)
+            {
                 self.layer = LayerMask.NameToLayer(layerName);
+            }
 
             return self;
         }
@@ -128,7 +128,9 @@ namespace CrowRx
             Transform transform = self.transform;
 
             for (int i = 0, max = transform.childCount; i < max; ++i)
-                SetLayerRecursively(transform.GetChild(i).gameObject, layer);
+            {
+                transform.GetChild(i).gameObject.SetLayerRecursively(layer);
+            }
         }
 
         public static void SetLayerRecursively(this GameObject self, string layerName) => self.SetLayerRecursively(LayerMask.NameToLayer(layerName));
@@ -141,10 +143,14 @@ namespace CrowRx
         public static void ChildCirculateCallback(this GameObject self, Func<GameObject, bool> callback)
         {
             if (!(callback?.Invoke(self) ?? false))
+            {
                 return;
+            }
 
             for (int i = 0, count = self.transform.childCount; i < count; ++i)
-                ChildCirculateCallback(self.transform.GetChild(i).gameObject, callback);
+            {
+                self.transform.GetChild(i).gameObject.ChildCirculateCallback(callback);
+            }
         }
 
         /// <summary>
@@ -157,7 +163,9 @@ namespace CrowRx
             Transform rootTransform = root ? root.transform : null;
 
             if (self.GetComponentsInChildren<Transform>().Any(transform => transform == root.transform))
+            {
                 return result;
+            }
 
             result = self.name;
             Transform selfTransform = self.transform;
@@ -178,20 +186,15 @@ namespace CrowRx
             GameObject gameObject = new(string.IsNullOrEmpty(name) ? type.Name : name);
 
             if (self)
-                gameObject.transform.SetParent(self.transform); // 부모 설정
+            {
+                gameObject.transform.SetParent(self.transform);
+            }
 
-            // 컴포넌트 추가
             return gameObject.AddComponent(type);
         }
 
         public static Component CreateGameObject(this GameObject self, Type type) => self.CreateGameObject(type, null);
-
-        public static TComponent CreateGameObject<TComponent>(this GameObject self, string name)
-            where TComponent : Component
-            => CreateGameObject(self, typeof(TComponent), name) as TComponent;
-
-        public static TComponent CreateGameObject<TComponent>(this GameObject self)
-            where TComponent : Component
-            => self.CreateGameObject<TComponent>(null);
+        public static TComponent CreateGameObject<TComponent>(this GameObject self, string name) where TComponent : Component => self.CreateGameObject(typeof(TComponent), name) as TComponent;
+        public static TComponent CreateGameObject<TComponent>(this GameObject self) where TComponent : Component => self.CreateGameObject<TComponent>(null);
     }
 }

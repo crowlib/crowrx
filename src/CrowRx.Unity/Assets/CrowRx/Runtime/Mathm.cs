@@ -9,7 +9,6 @@ using ZLinq;
 using System.Linq;
 #endif
 
-
 namespace CrowRx.Utility
 {
     public static class Mathm

@@ -161,7 +161,7 @@ namespace CrowRx.Editor
             return result;
         }
 
-        public static void BaseField(this IEditorCrowRx guiView, Action field, Color color = default(Color), bool box = false, string front_text = "") =>
+        public static void BaseField(this IEditorCrowRx guiView, Action field, Color color = default, bool box = false, string front_text = "") =>
             Horizontal(
                 guiView: null,
                 content: () =>

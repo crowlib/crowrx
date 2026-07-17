@@ -1,6 +1,5 @@
 ﻿using System.Threading;
 
-
 namespace CrowRx
 {
     public static class CancellationTokenSourceExtension
@@ -16,7 +15,7 @@ namespace CrowRx
             {
                 cancellationTokenSource.Cancel();
             }
-            
+
             cancellationTokenSource.Dispose();
         }
     }

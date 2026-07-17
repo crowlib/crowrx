@@ -1,8 +1,5 @@
-// ReSharper disable InconsistentNaming
-
 using System;
 using System.Diagnostics;
-
 
 namespace CrowRx
 {
@@ -26,9 +23,7 @@ namespace CrowRx
             void ILogger.Exception(Exception exception) => UnityEngine.Debug.LogException(exception);
         }
 
-
         private static IUnityLogger _logger = new DefaultLogger();
-
 
         public static void SetLogger(IUnityLogger logger)
         {
@@ -38,7 +33,7 @@ namespace CrowRx
             }
 
             _logger = logger;
-            
+
             Log.SetLogger(_logger);
         }
 

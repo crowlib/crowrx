@@ -25,8 +25,8 @@ namespace CrowRx.Editor
 		/// <returns> 변수의 값을 리턴 </returns>
 		public static TValueType GetValue<TValueType>(this Component self, Type componentType, string fieldName, VariableType variableType)
 		{
-			TValueType result = default(TValueType);
-			if (componentType != null)
+			TValueType result = default;
+			if (componentType is not null)
 			{
 				if (VariableType.Field.Equals(variableType))
 				{

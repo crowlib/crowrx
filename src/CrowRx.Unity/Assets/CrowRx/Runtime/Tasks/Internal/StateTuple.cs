@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
-
 namespace CrowRx.Tasks.Internal
 {
     internal static class StateTuple
@@ -29,7 +28,6 @@ namespace CrowRx.Tasks.Internal
     internal static class StatePool<T1, T2, T3>
     {
         private static readonly ConcurrentQueue<StateTuple<T1, T2, T3>> s_queue = new();
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StateTuple<T1, T2, T3> Create(T1 item1, T2 item2, T3 item3)

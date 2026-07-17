@@ -1,11 +1,9 @@
 ﻿using System;
 #if USING_ZSTRING
 using Cysharp.Text;
-
 #else
 using System.Text;
 #endif
-
 
 namespace CrowRx
 {

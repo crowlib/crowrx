@@ -4,25 +4,20 @@ using UnityEngine;
 using UnityEngine.Events;
 using Cysharp.Threading.Tasks;
 
-
 namespace CrowRx.Helper
 {
     using Tasks;
     using Utility;
-
 
     [RequireComponent(typeof(CanvasGroup))]
     public class CanvasGroupFade : MonoBehaviourCrowRx
     {
         [SerializeField] private UnityEvent onTaskCompleted;
 
-
         private CanvasGroup _canvasGroup;
         private CancellationTokenSource _ctsFade;
 
-
         public CanvasGroup CanvasGroup => !_canvasGroup && !TryGetComponent(out _canvasGroup) ? null : _canvasGroup;
-
 
         private void Awake() => CanvasGroup.alpha = 0f;
 

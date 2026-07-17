@@ -6,14 +6,12 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-
 namespace CrowRx.Editor
 {
     [CustomPropertyDrawer(typeof(SerializeReferenceListAttribute), useForChildren: false)]
     public class SerializeReferenceListDrawer : PropertyDrawer
     {
         private readonly Dictionary<string, ReorderableList> _listCache = new();
-
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -58,7 +56,7 @@ namespace CrowRx.Editor
                         SerializedProperty element = listProperty.GetArrayElementAtIndex(index);
                         return EditorGUI.GetPropertyHeight(element, true) + 2;
                     },
-                    
+
                     onAddDropdownCallback = (_, _) =>
                     {
                         var menu = new GenericMenu();

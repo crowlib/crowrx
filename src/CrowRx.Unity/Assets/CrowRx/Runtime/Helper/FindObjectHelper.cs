@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace CrowRx.Helper
 {
     public class FindObjectHelper : MonoBehaviourCrowRx
     {
         private readonly Dictionary<string, GameObject> _objectCache = new();
-
 
         private void OnTransformChildrenChanged() => _objectCache.Clear();
 

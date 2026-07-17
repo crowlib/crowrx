@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace CrowRx
 {
     public class SerializeReferenceListAttribute : PropertyAttribute
@@ -19,7 +18,7 @@ namespace CrowRx
         public static implicit operator List<T>(SerializedReferenceList<T> container) => container.items;
 
         // 묵시적 변환: List<T> → SerializedReferenceList<T>
-        public static implicit operator SerializedReferenceList<T>(List<T> list) => new SerializedReferenceList<T> { items = list };
+        public static implicit operator SerializedReferenceList<T>(List<T> list) => new() { items = list };
 
         // IEnumerable<T> 지원
         public IEnumerator<T> GetEnumerator() => items.GetEnumerator();
@@ -37,7 +36,7 @@ namespace CrowRx
         public void Remove(T item) => items.Remove(item);
         public void Clear() => items.Clear();
         public int Count => items.Count;
-        
+
         public IReadOnlyList<T> Items => items;
     }
 }
