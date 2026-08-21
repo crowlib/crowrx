@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace CrowRx
 {
@@ -10,6 +12,23 @@ namespace CrowRx
 
         public static TComponent AddComponent<TComponent>(this Component self) where TComponent : Component => self.gameObject.AddComponent<TComponent>();
         public static Component AddComponent(this Component self, Type componentType) => self.gameObject.AddComponent(componentType);
+
+        public static bool TryGetSingleComponent<T>(this Component self, out T component)
+        {
+            using PooledObject<List<T>> disposable = ListPool<T>.Get(out List<T> capabilities);
+            self.GetComponents(capabilities);
+
+            if (capabilities.Count == 1)
+            {
+                component = capabilities[0];
+                return true;
+            }
+
+            UnityLog.Exception(new InvalidOperationException($"[{self.GetType().Name}]<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+
+            component = default;
+            return false;
+        }
 
         public static TComponent SetParent<TComponent>(this TComponent self, Transform transform)
             where TComponent : Component
