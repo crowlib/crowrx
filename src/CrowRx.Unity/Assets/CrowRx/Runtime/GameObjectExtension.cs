@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Pool;
 
 namespace CrowRx
 {
@@ -56,6 +57,23 @@ namespace CrowRx
         public static Component GetOrAddComponent(this GameObject obj, Type componentType) => obj.TryGetComponent(componentType, out Component component) ? component : obj.AddComponent(componentType);
 
         public static bool GetAllComponentsInHierarchy<TComponent>(this GameObject obj, List<TComponent> components) => obj.transform.GetAllComponentsInHierarchy(components);
+
+        public static bool TryGetSingleComponent<T>(this GameObject self, out T component)
+        {
+            using PooledObject<List<T>> disposable = ListPool<T>.Get(out List<T> capabilities);
+            self.GetComponents(capabilities);
+
+            if (capabilities.Count == 1)
+            {
+                component = capabilities[0];
+                return true;
+            }
+
+            UnityLog.Exception(new InvalidOperationException($"<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+
+            component = default;
+            return false;
+        }
 
         public static GameObject FindTargetObject(this GameObject obj, string objectName) => obj.GetOrAddComponent<FindObjectHelper>().FindTargetObject(objectName);
 
