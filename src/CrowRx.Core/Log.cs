@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 
-
 namespace CrowRx
 {
     public interface ILogger
@@ -24,9 +23,7 @@ namespace CrowRx
             void ILogger.Exception(Exception exception) => Console.Error.WriteLine($"Exception : {exception}");
         }
 
-
         private static ILogger _logger = new DefaultLogger();
-
 
         public static void SetLogger(ILogger? logger)
         {
@@ -37,6 +34,7 @@ namespace CrowRx
 
             _logger = logger;
         }
+
 
         [Conditional("CROWRX_LOG_INFO"), Conditional("CROWRX_LOG_ALL"), Conditional("UNITY_EDITOR")]
         public static void Info(string message) => _logger.Info(message);
@@ -52,5 +50,8 @@ namespace CrowRx
 
         [Conditional("CROWRX_LOG_EXCEPTION"), Conditional("CROWRX_LOG_ALL"), Conditional("UNITY_EDITOR")]
         public static void Exception(Exception exception) => _logger.Exception(exception);
+
+        // Core 내부의 실제 실패 진단은 소비 프로젝트의 컴파일 심볼에 의존하지 않습니다.
+        internal static void ReportError(string message) => _logger.Error(message);
     }
 }

@@ -24,20 +24,31 @@ Log.Error("Failed to load data.");
 
 ---
 
-### 2. Enum Extensions (`EnumExtension` Static Class)
-High-performance utilities for `System.Enum` types using unsafe operations.
+### 2. Enum Extensions (`EnumValueExtension` and `EnumAttributeExtension` Static Classes)
+Utilities for extracting the exact underlying enum value, comparing enum values, and caching member attributes.
 
-*   **`ToInt<TEnum>()`**: Converts an enum to its integer value at O(1) speed without boxing.
-*   **`EqualsEnum(enum2)`**: Compares two enums by their underlying integer values.
-*   **`GetAttributeOfType<T>()`**: Retrieves an attribute from an enum member.
+*   **`ToValue<TEnum, TValue>()`**: Returns the underlying value without boxing. `TValue` must match the enum's actual underlying type; a mismatch throws an exception.
+*   **`TryToValue<TEnum, TValue>(out value)`**: Returns whether the underlying type matches and supplies the value on success.
+*   **`EqualsValue(enum2)`**: Compares enum numeric values while preserving signedness and the full integer range.
+*   **`GetAttributeOfType<TEnum, TAttribute>()`**: Retrieves the first matching member attribute without boxing the enum argument. Results are cached and attribute instances are shared between callers. Missing attributes and unnamed flag combinations return null.
+
+`ToInt` and `EqualsEnum` are obsolete. The former one-type-argument `GetAttributeOfType<T>()` overload has been removed; specify both the enum and attribute types.
 
 **Example:**
 ```csharp
-enum Status { Active = 1, Inactive = 0 }
+using System.ComponentModel;
 
-int value = Status.Active.ToInt(); // 1
-bool isActive = Status.Active.EqualsEnum(OtherEnum.One); 
-var desc = Status.Active.GetAttributeOfType<DescriptionAttribute>();
+enum Status
+{
+    [Description("Active")]
+    Active = 1,
+    Inactive = 0
+}
+
+int value = Status.Active.ToValue<Status, int>(); // 1
+bool converted = Status.Active.TryToValue<Status, int>(out int rawValue);
+bool isActive = Status.Active.EqualsValue(Status.Active);
+var desc = Status.Active.GetAttributeOfType<Status, DescriptionAttribute>();
 ```
 
 ---
@@ -47,6 +58,9 @@ Robust type conversion and string parsing utilities.
 
 *   **`ConvertTo<T>()`**: Converts an object to type `T` (supports `Nullable` and `InvariantCulture`).
 *   **`ParseTo<T>()`**: Parses a string into type `T` (supports primitives, `Enum`, and `Nullable`).
+*   **`TryConvertTo<T>(out result)`**, **`TryParseTo<T>(out result)`**: Return success separately from the result, distinguishing a valid zero from a failed conversion. Expected failures return false without logging.
+
+All conversions use `InvariantCulture`. `ConvertTo` and `ParseTo` return the default value on expected failures and send internal diagnostics to the configured logger. Unexpected custom-converter exceptions propagate to the caller. Internal diagnostics are independent of the public conditional logging methods.
 
 **Example:**
 ```csharp
@@ -55,6 +69,7 @@ float val = raw.ConvertTo<float>(); // 123.45f
 
 string input = "Active";
 Status status = input.ParseTo<Status>(); // Status.Active
+bool parsed = "0".TryParseTo(out int zero); // true, zero == 0
 ```
 
 ---
@@ -63,7 +78,10 @@ Status status = input.ParseTo<Status>(); // Status.Active
 A caching-based conversion system to minimize parsing overhead for string arrays.
 
 *   **`GatValue<T>(index)`**: Gets and caches the parsed value (Note: method name is `GatValue` in source).
+*   **`TryGetValue<T>(index, out result)`**: Returns the cached conversion status and value without logging failures.
 *   **`SetValue<T>(index, value)`**: Sets a value and updates the internal string source.
+
+Each slot caches results and success status for every requested type. Updating a slot invalidates all of its type caches. The converter is not thread-safe; callers must synchronize shared access.
 
 **Example:**
 ```csharp
@@ -76,7 +94,7 @@ bool flag = converter.GatValue<bool>(1); // True
 
 ## Requirements
 - **Unity 6.0 or newer**
-- **.NET 8.0 SDK** (for compilation)
+- **.NET 10.0 SDK** (for compilation; see `global.json`)
 - **.NET Standard 2.1** compatibility
 
 ## Installation

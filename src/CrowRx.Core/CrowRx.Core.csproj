@@ -15,14 +15,13 @@
         <RootNamespace>CrowRx</RootNamespace>
         <AssemblyName>CrowRx.Core</AssemblyName>
         <PackageId>CrowRx.Core</PackageId>
-        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 
         <Title>CrowRx</Title>
         <PackageTags>unity unity-editor</PackageTags>
         <Authors>newhory</Authors>
         <Description>A core library for CrowRx. This package is intended for use with Unity3D 6.0 or newer only.		</Description>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <Version>$(VersionPrefix)</Version>
         <AssemblyTitle>CrowRx</AssemblyTitle>
         <RepositoryType>git</RepositoryType>
@@ -30,8 +29,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="LICENSE" Pack="true" PackagePath="" />
-        <None Include="README.md" Pack="true" PackagePath=""/>
+        <None Update="LICENSE" Pack="true" PackagePath="" />
+        <None Update="Readme.md" Pack="true" PackagePath="" />
     </ItemGroup>
 
 </Project>
