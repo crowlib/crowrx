@@ -1,6 +1,6 @@
 {
     "name": "com.crowlib.crowrx",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "displayName": "CrowRx",
     "author": {
         "name": "Hory",
@@ -10,8 +10,8 @@
     "description": "CrowRx project main package.",
     "category": "Scripting",
     "dependencies": {
-        "com.cysharp.r3": "1.3.0",
-        "com.cysharp.unitask": "2.5.10",
-        "com.cysharp.zlinq": "1.5.4"
+        "com.cysharp.r3": "1.3.1",
+        "com.cysharp.unitask": "2.5.11",
+        "com.cysharp.zlinq": "1.5.6"
     }
 }
