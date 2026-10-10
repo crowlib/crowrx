@@ -1,9 +1,4 @@
 ﻿using System;
-#if USING_ZSTRING
-using Cysharp.Text;
-#else
-using System.Text;
-#endif
 
 namespace CrowRx
 {
@@ -24,7 +19,6 @@ namespace CrowRx
 
             // 시작 위치
             int startIndex = self.IndexOf(start, StringComparison.Ordinal);
-
             if (startIndex <= -1)
             {
                 return string.Empty;
@@ -47,15 +41,18 @@ namespace CrowRx
             {
                 return string.Empty;
             }
-#if USING_ZSTRING
-            using Utf16ValueStringBuilder stringBuilder = ZString.CreateStringBuilder();
-#else
-            StringBuilder stringBuilder = new();
-#endif
-            stringBuilder.Append(char.ToUpperInvariant(self[0]));
-            stringBuilder.Append(self[1..]);
 
-            return stringBuilder.ToString();
+            char first = char.ToUpperInvariant(self[0]);
+            if (first == self[0])
+            {
+                return self;
+            }
+
+            return string.Create(self.Length, (Text: self, First: first), static (destination, state) =>
+            {
+                state.Text.AsSpan().CopyTo(destination);
+                destination[0] = state.First;
+            });
         }
     }
 }

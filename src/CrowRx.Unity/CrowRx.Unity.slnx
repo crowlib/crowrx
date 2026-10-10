@@ -1,4 +1,6 @@
 ﻿<Solution>
   <Project Path="CrowRx.csproj" />
+  <Project Path="CrowRx.Runtime.Tests.csproj" />
   <Project Path="CrowRx.Editor.csproj" />
+  <Project Path="CrowRx.Editor.Tests.csproj" />
 </Solution>

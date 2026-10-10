@@ -12,9 +12,9 @@ namespace CrowRx
                 return false;
             }
 
-            if (isIncludeSelf && self == target)
+            if (self == target)
             {
-                return true;
+                return isIncludeSelf;
             }
 
             return target.IsAssignableFrom(self);
@@ -24,66 +24,126 @@ namespace CrowRx
 
         public static string GetRealTypeName(this Type type)
         {
-            if (!type.IsGenericType)
+            if (type is null)
             {
-                return type.Name.Replace("+", ".");
+                throw new ArgumentNullException(nameof(type));
             }
 
-            StringBuilder sb = new();
-
-            sb.Append(type.Name[..type.Name.IndexOf('`')]);
-            sb.Append('<');
-
-            bool isAppendComma = false;
-
-            foreach (Type arg in type.GetGenericArguments())
+            if (!type.HasElementType && GetArity(type.Name) == 0)
             {
-                if (isAppendComma)
-                {
-                    sb.Append(',');
-                }
-
-                sb.Append(arg.GetRealTypeName());
-
-                isAppendComma = true;
+                return type.Name;
             }
 
-            sb.Append('>');
+            StringBuilder builder = new();
+            AppendType(builder, type, false);
 
-            return sb.ToString().Replace("+", ".");
+            return builder.ToString();
         }
 
+        /// <summary>네임스페이스와 선언 타입을 포함한 표시명입니다. 어셈블리를 구분하는 식별자는 AssemblyQualifiedName을 사용합니다.</summary>
         public static string GetRealTypeFullName(this Type type)
         {
-            if (!type.IsGenericType)
+            if (type is null)
             {
-                return type.ToString().Replace("+", ".");
+                throw new ArgumentNullException(nameof(type));
             }
 
-            StringBuilder sb = new();
-
-            string fullName = type.ToString();
-
-            sb.Append(fullName[..fullName.IndexOf('`')]);
-            sb.Append('<');
-
-            bool isAppendComma = false;
-
-            foreach (Type arg in type.GetGenericArguments())
+            if (!type.HasElementType && !type.IsGenericType)
             {
-                if (isAppendComma)
+                return (type.FullName ?? type.Name).Replace('+', '.');
+            }
+
+            StringBuilder builder = new();
+            AppendType(builder, type, true);
+
+            return builder.ToString();
+        }
+
+        private static void AppendType(StringBuilder builder, Type type, bool fullName)
+        {
+            if (type.HasElementType)
+            {
+                AppendType(builder, type.GetElementType(), fullName);
+                if (type.IsArray)
                 {
-                    sb.Append(',');
+                    builder.Append('[');
+
+                    int rank = type.GetArrayRank();
+                    if (rank == 1 && !type.IsSZArray)
+                    {
+                        builder.Append('*');
+                    }
+                    else
+                    {
+                        builder.Append(',', rank - 1);
+                    }
+
+                    builder.Append(']');
+                }
+                else
+                {
+                    builder.Append(type.IsByRef ? '&' : '*');
                 }
 
-                sb.Append(arg.GetRealTypeFullName());
-
-                isAppendComma = true;
+                return;
             }
 
-            sb.Append('>');
+            Type[] arguments = type.IsGenericType ? type.GetGenericArguments() : Type.EmptyTypes;
+            int argumentIndex = fullName ? 0 : arguments.Length - GetArity(type.Name);
+            AppendNamedType(builder, type, fullName, arguments, ref argumentIndex);
+        }
 
-            return sb.ToString().Replace("+", ".");
+        private static void AppendNamedType(StringBuilder builder, Type type, bool fullName, Type[] arguments, ref int argumentIndex)
+        {
+            if (fullName && type.DeclaringType != null && !type.IsGenericParameter)
+            {
+                AppendNamedType(builder, type.DeclaringType, true, arguments, ref argumentIndex);
+                builder.Append('.');
+            }
+            else if (fullName && !type.IsGenericParameter && !string.IsNullOrEmpty(type.Namespace))
+            {
+                builder.Append(type.Namespace).Append('.');
+            }
+
+            string name = type.Name;
+            int marker = name.IndexOf('`');
+            builder.Append(name, 0, marker < 0 ? name.Length : marker);
+
+            int arity = GetArity(name);
+            if (arity == 0)
+            {
+                return;
+            }
+
+            builder.Append('<');
+
+            for (int i = 0; i < arity; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(',');
+                }
+
+                AppendType(builder, arguments[argumentIndex++], fullName);
+            }
+
+            builder.Append('>');
+        }
+
+        private static int GetArity(string name)
+        {
+            int arity = 0;
+
+            int marker = name.IndexOf('`');
+            if (marker >= 0)
+            {
+                for (int i = marker + 1; i < name.Length; i++)
+                {
+                    arity = arity * 10 + name[i] - '0';
+                }
+            }
+
+            return arity;
         }
     }
 }

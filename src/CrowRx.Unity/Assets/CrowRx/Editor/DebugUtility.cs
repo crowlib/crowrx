@@ -14,52 +14,21 @@ namespace CrowRx.Editor
 
         public static void DrawCircle(Vector3 position, Quaternion rotation, float radius, Color color, int segments, float duration = 0f)
         {
-            // If either radius or number of segments are less or equal to 0, skip drawing
-            if (radius <= 0.0f || segments <= 0)
+            if (radius <= 0f || segments < 3) return;
+            double step = 2d * System.Math.PI / segments;
+            double cosStep = System.Math.Cos(step), sinStep = System.Math.Sin(step);
+            double x = radius, y = 0d;
+            Vector3 first = position + rotation * new Vector3(radius, 0f, 0f);
+            Vector3 previous = first;
+            for (int i = 1; i <= segments; i++)
             {
-                return;
-            }
-
-            // Single segment of the circle covers (360 / number of segments) degrees
-            float angleStep = (360.0f / segments);
-
-            // Result is multiplied by Mathf.Deg2Rad constant which transforms degrees to radians
-            // which are required by Unity's Mathf class trigonometry methods
-
-            angleStep *= Mathf.Deg2Rad;
-
-            // lineStart and lineEnd variables are declared outside of the following for loop
-            Vector3 lineStart = Vector3.zero;
-            Vector3 lineEnd = Vector3.zero;
-
-            for (int i = 0; i < segments; i++)
-            {
-                // Line start is defined as starting angle of the current segment (i)
-                lineStart.x = Mathf.Cos(angleStep * i);
-                lineStart.y = Mathf.Sin(angleStep * i);
-                lineStart.z = 0.0f;
-
-                // Line end is defined by the angle of the next segment (i+1)
-                lineEnd.x = Mathf.Cos(angleStep * (i + 1));
-                lineEnd.y = Mathf.Sin(angleStep * (i + 1));
-                lineEnd.z = 0.0f;
-
-                // Results are multiplied so they match the desired radius
-                lineStart *= radius;
-                lineEnd *= radius;
-
-                // Results are multiplied by the rotation quaternion to rotate them 
-                // since this operation is not commutative, result needs to be
-                // reassigned, instead of using multiplication assignment operator (*=)
-                lineStart = rotation * lineStart;
-                lineEnd = rotation * lineEnd;
-
-                // Results are offset by the desired position/origin 
-                lineStart += position;
-                lineEnd += position;
-
-                // Points are connected using DrawLine method and using the passed color
-                DrawLine(lineStart, lineEnd, color, duration);
+                double nextX = x * cosStep - y * sinStep;
+                y = x * sinStep + y * cosStep;
+                x = nextX;
+                Vector3 next = i == segments ? first :
+                    position + rotation * new Vector3((float)x, (float)y, 0f);
+                DrawLine(previous, next, color, duration);
+                previous = next;
             }
         }
 
@@ -68,6 +37,7 @@ namespace CrowRx.Editor
             Color color, bool drawChord = false, bool drawSector = false,
             int arcSegments = 32, float duration = 0f)
         {
+            if (radius <= 0f || arcSegments <= 0) return;
             float arcSpan = Mathf.DeltaAngle(startAngle, endAngle);
 
             // Since Mathf.DeltaAngle returns a signed angle of the shortest path between two angles, it 
@@ -161,7 +131,7 @@ namespace CrowRx.Editor
             Vector3 position, float radius, Color color, bool drawChord = false,
             bool drawSector = false, int arcSegments = 16, float duration = 0f)
         {
-            DrawArc(startAngle, endAngle, position, Quaternion.Euler(0, -90, 0), radius,
+            DrawArc(startAngle, endAngle, position, Quaternion.Euler(90, 0, 0), radius,
                 color, drawChord, drawSector, arcSegments, duration);
         }
 
@@ -169,7 +139,7 @@ namespace CrowRx.Editor
             Vector3 position, float radius, Color color, bool drawChord = false,
             bool drawSector = false, int arcSegments = 16, float duration = 0f)
         {
-            DrawArc(startAngle, endAngle, position, Quaternion.Euler(90, 0, 0), radius,
+            DrawArc(startAngle, endAngle, position, Quaternion.Euler(0, -90, 0), radius,
                 color, drawChord, drawSector, arcSegments, duration);
         }
 
@@ -287,21 +257,14 @@ namespace CrowRx.Editor
 
         public static void DrawRectangle(Vector2 point1, Vector2 point2, Vector3 origin, Quaternion orientation, Color color, float duration = 0f)
         {
-            // Calculate extent as a distance between point1 and point2
-            float extentX = Mathf.Abs(point1.x - point2.x);
-            float extentY = Mathf.Abs(point1.y - point2.y);
-
-            // Calculate rotated axes
-            Vector3 rotatedRight = orientation * Vector3.right;
-            Vector3 rotatedUp = orientation * Vector3.up;
-
-            // Calculate each rectangle point
-            Vector3 pointA = origin + rotatedRight * point1.x + rotatedUp * point1.y;
-            Vector3 pointB = pointA + rotatedRight * extentX;
-            Vector3 pointC = pointB + rotatedUp * extentY;
-            Vector3 pointD = pointA + rotatedUp * extentY;
-
-            DrawQuad(pointA, pointB, pointC, pointD, color, duration);
+            Vector2 min = Vector2.Min(point1, point2);
+            Vector2 max = Vector2.Max(point1, point2);
+            Vector3 right = orientation * Vector3.right;
+            Vector3 up = orientation * Vector3.up;
+            DrawQuad(origin + right * min.x + up * min.y,
+                origin + right * max.x + up * min.y,
+                origin + right * max.x + up * max.y,
+                origin + right * min.x + up * max.y, color, duration);
         }
 
         public static void DrawSphere(Vector3 position, Quaternion orientation, float radius, Color color, int segments = 4, float duration = 0f)
@@ -311,7 +274,8 @@ namespace CrowRx.Editor
                 segments = 2;
             }
 
-            int doubleSegments = segments * 2;
+            if (radius <= 0f) return;
+            int doubleSegments = checked(segments * 2);
 
             // Draw meridians
 
@@ -353,10 +317,10 @@ namespace CrowRx.Editor
             DrawRectangle(position - offsetZ, orientation, new Vector2(size.x, size.y), color, duration);
             DrawRectangle(position + offsetZ, orientation, new Vector2(size.x, size.y), color, duration);
 
-            DrawLine(pointA - offsetZ, pointA + offsetZ, color, duration);
-            DrawLine(pointB - offsetZ, pointB + offsetZ, color, duration);
-            DrawLine(pointC - offsetZ, pointC + offsetZ, color, duration);
-            DrawLine(pointD - offsetZ, pointD + offsetZ, color, duration);
+            DrawLine(position + pointA - offsetZ, position + pointA + offsetZ, color, duration);
+            DrawLine(position + pointB - offsetZ, position + pointB + offsetZ, color, duration);
+            DrawLine(position + pointC - offsetZ, position + pointC + offsetZ, color, duration);
+            DrawLine(position + pointD - offsetZ, position + pointD + offsetZ, color, duration);
         }
 
         public static void DrawCube(Vector3 position, Quaternion orientation, float size, Color color, float duration = 0f)

@@ -1,22 +1,16 @@
 using System.Buffers;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CrowRx
 {
     public static class TransformExtension
     {
+        /// <summary>노드별 Find를 깊이 우선으로 시도합니다. 중복 이름은 첫 결과를 선택하므로 고유한 참조가 필요한 경우 사용하지 않습니다.</summary>
         public static Transform FindChildDeep(this Transform self, string targetName)
         {
-            Transform result = self.Find(targetName);
-            if (result)
+            for (Transform current = self; current; current = NextDescendant(current, self))
             {
-                return result;
-            }
-
-            for (int i = 0, count = self.childCount; i < count; ++i)
-            {
-                result = self.GetChild(i).FindChildDeep(targetName);
+                Transform result = current.Find(targetName);
                 if (result)
                 {
                     return result;
@@ -28,48 +22,63 @@ namespace CrowRx
 
         public static T FindUpwardIncludeThis<T>(this Transform self)
         {
-            while (true)
+            if (self.TryGetComponent(out T result))
             {
-                if (self.TryGetComponent(out T result))
-                {
-                    return result;
-                }
-
-                if (!self.parent)
-                {
-                    return default;
-                }
-
-                T findUpwardIncludeThis = self.GetComponentInParent<T>();
-                if (findUpwardIncludeThis != null)
-                {
-                    return findUpwardIncludeThis;
-                }
-
-                self = self.parent;
+                return result;
             }
+
+            return FindUpwardInternal<T>(self);
         }
 
         public static T FindUpward<T>(this Transform self)
         {
-            while (true)
+            T result = self.GetComponentInParent<T>();
+            if (result is not null &&
+                (!self.TryGetComponent(out T own) || !ReferenceEquals(own, result)))
             {
-                if (!self.parent)
-                {
-                    return default;
-                }
-
-                T componentInParent = self.GetComponentInParent<T>();
-                if (componentInParent != null)
-                {
-                    return componentInParent;
-                }
-
-                self = self.parent;
+                return result;
             }
+
+            // 자기 자신을 제외한 기존 활성 노드 선택 규칙을 보존합니다.
+            // 부모에서 전체 상위 검색을 한 번만 하면 조상별 재검색은 필요 없습니다.
+            return self.parent ? self.parent.GetComponentInParent<T>() : default;
         }
 
-        public static T FindDownward<T>(this Transform self) => self.TryGetComponent(out T target) ? target : self.FindDownwardInternal<T>();
+        private static T FindUpwardInternal<T>(Transform start)
+        {
+            if (!start)
+            {
+                return default;
+            }
+
+            T result = start.GetComponentInParent<T>();
+            if (result != null)
+            {
+                return result;
+            }
+
+            // 엔진의 전체 상위 검색은 한 번만 실행하고, 실패 시 각 조상을 한 번씩 검사합니다.
+            for (Transform current = start.parent; current; current = current.parent)
+            {
+                if (current.TryGetComponent(out result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static T FindDownward<T>(this Transform self)
+        {
+            if (self.TryGetComponent(out T target))
+            {
+                return target;
+            }
+
+            target = self.GetComponentInChildren<T>();
+            return target != null ? target : self.FindDownwardInternal<T>();
+        }
 
         public static void RemoveAllChildren(this Transform self)
         {
@@ -81,17 +90,22 @@ namespace CrowRx
 
             GameObject[] removalObjects = ArrayPool<GameObject>.Shared.Rent(childCount);
 
-            for (int i = 0; i < childCount; ++i)
+            try
             {
-                removalObjects[i] = self.GetChild(i).gameObject;
-            }
+                for (int i = 0; i < childCount; ++i)
+                {
+                    removalObjects[i] = self.GetChild(i).gameObject;
+                }
 
-            for (int i = 0; i < childCount; ++i)
+                for (int i = 0; i < childCount; ++i)
+                {
+                    Object.Destroy(removalObjects[i]);
+                }
+            }
+            finally
             {
-                Object.Destroy(removalObjects[i]);
+                ArrayPool<GameObject>.Shared.Return(removalObjects, clearArray: true);
             }
-
-            ArrayPool<GameObject>.Shared.Return(removalObjects);
         }
 
         public static void SetActiveAllChildren(this Transform self, bool value)
@@ -100,13 +114,6 @@ namespace CrowRx
             {
                 self.GetChild(i).gameObject.SetActive(value);
             }
-        }
-
-        public static bool GetAllComponentsInHierarchy<T>(this Transform self, List<T> components)
-        {
-            GatherComponent(self, components);
-
-            return components.Count > 0;
         }
 
         /// <summary>
@@ -124,38 +131,41 @@ namespace CrowRx
             return self;
         }
 
-        private static void GatherComponent<T>(Transform root, List<T> components)
-        {
-            T[] rootComponents = root.GetComponents<T>();
-            if (rootComponents?.Length > 0)
-            {
-                components.AddRange(rootComponents);
-            }
-
-            for (int index = 0, count = root.childCount; index < count; ++index)
-            {
-                GatherComponent(root.GetChild(index), components);
-            }
-        }
-
         private static T FindDownwardInternal<T>(this Transform self)
         {
-            T target = self.GetComponentInChildren<T>();
-            if (target != null)
+            // 활성 자손 검색이 실패한 경우에만 비활성 자손을 포함해 전위 순회합니다.
+            // Transform의 부모/형제 링크를 사용하므로 재귀 스택이나 임시 컬렉션이 필요 없습니다.
+            for (Transform current = NextDescendant(self, self); current; current = NextDescendant(current, self))
             {
-                return target;
-            }
-
-            for (int i = 0; i < self.childCount; ++i)
-            {
-                target = self.GetChild(i).FindDownward<T>();
-                if (target != null)
+                if (current.TryGetComponent(out T target))
                 {
                     return target;
                 }
             }
 
             return default;
+        }
+
+        internal static Transform NextDescendant(Transform current, Transform root, bool includeChildren = true)
+        {
+            if (includeChildren && current.childCount > 0)
+            {
+                return current.GetChild(0);
+            }
+
+            while (current != root)
+            {
+                Transform parent = current.parent;
+                int nextSibling = current.GetSiblingIndex() + 1;
+                if (nextSibling < parent.childCount)
+                {
+                    return parent.GetChild(nextSibling);
+                }
+
+                current = parent;
+            }
+
+            return null;
         }
     }
 }

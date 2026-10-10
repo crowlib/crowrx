@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,50 +12,55 @@ namespace CrowRx
     {
         public static bool ExecuteEventToParent<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor) where T : IEventSystemHandler
         {
-            if (ExecuteEvents.CanHandleEvent<T>(target))
+            for (Transform current = target ? target.transform : null; current; current = current.parent)
             {
-                return ExecuteEvents.Execute(target, eventData, functor);
+                if (ExecuteEvents.CanHandleEvent<T>(current.gameObject))
+                    return ExecuteEvents.Execute(current.gameObject, eventData, functor);
             }
-
-            Transform parent = target.transform.parent;
-
-            return parent && parent.gameObject.ExecuteEventToParent(eventData, functor);
+            return false;
         }
 
+        /// <summary>
+        /// 포인터 아래에서 자신을 제외한 첫 유효 raycast 대상과 그 부모에 이벤트를 전달합니다.
+        /// 해당 대상이 처리하지 못해도 다음 raycast 대상으로 넘어가지 않습니다.
+        /// </summary>
+        /// <param name="eventData">raycast와 이벤트 전달에 그대로 사용하는 PointerEventData입니다. 다른 종류의 데이터는 false를 반환합니다.</param>
+        /// <returns>대상 또는 부모의 이벤트 핸들러를 실행했으면 true입니다. EventSystem이 없으면 false입니다.</returns>
         public static bool ExecuteEventExceptThis<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor) where T : IEventSystemHandler
         {
-            PointerEventData rayEventData = new(EventSystem.current)
+            if (eventData is not PointerEventData pointerEventData)
             {
-                position = Input.mousePosition
-            };
+                return false;
+            }
 
-            List<RaycastResult> raycastResult = new();
-            EventSystem.current.RaycastAll(rayEventData, raycastResult);
+            EventSystem eventSystem = EventSystem.current;
+            if (!eventSystem)
+            {
+                return false;
+            }
+
+            using PooledObject<List<RaycastResult>> pooled = ListPool<RaycastResult>.Get(out List<RaycastResult> raycastResult);
+            eventSystem.RaycastAll(pointerEventData, raycastResult);
 
             int resultCount = raycastResult.Count;
-            bool result = resultCount > 1;
 
             for (int i = 0; i < resultCount; ++i)
             {
                 GameObject hovered = raycastResult[i].gameObject;
 
-                if (hovered == target)
+                if (!hovered || hovered == target)
                 {
                     continue;
                 }
 
-                result |= hovered.ExecuteEventToParent(eventData, functor);
-
-                break;
+                return hovered.ExecuteEventToParent(eventData, functor);
             }
 
-            return result;
+            return false;
         }
 
         public static TComponent GetOrAddComponent<TComponent>(this GameObject obj) where TComponent : Component => obj.TryGetComponent(out TComponent component) ? component : obj.AddComponent<TComponent>();
         public static Component GetOrAddComponent(this GameObject obj, Type componentType) => obj.TryGetComponent(componentType, out Component component) ? component : obj.AddComponent(componentType);
-
-        public static bool GetAllComponentsInHierarchy<TComponent>(this GameObject obj, List<TComponent> components) => obj.transform.GetAllComponentsInHierarchy(components);
 
         public static bool TryGetSingleComponent<T>(this GameObject self, out T component)
         {
@@ -69,12 +73,16 @@ namespace CrowRx
                 return true;
             }
 
-            UnityLog.Exception(new InvalidOperationException($"<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+            if (capabilities.Count > 1)
+            {
+                UnityLog.Exception(new InvalidOperationException($"<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+            }
 
             component = default;
             return false;
         }
 
+        [Obsolete("FindObjectHelper를 통한 이름 기반 캐시 검색은 사용을 중단합니다. 직렬화된 참조나 생성 시 보관한 직접 참조를 사용하세요.", false)]
         public static GameObject FindTargetObject(this GameObject obj, string objectName) => obj.GetOrAddComponent<FindObjectHelper>().FindTargetObject(objectName);
 
         public static void RemoveAllChildren(this GameObject parent) => parent.transform.RemoveAllChildren();
@@ -141,14 +149,9 @@ namespace CrowRx
 
         public static void SetLayerRecursively(this GameObject self, int layer)
         {
-            self.layer = layer;
-
-            Transform transform = self.transform;
-
-            for (int i = 0, max = transform.childCount; i < max; ++i)
-            {
-                transform.GetChild(i).gameObject.SetLayerRecursively(layer);
-            }
+            Transform root = self.transform;
+            for (Transform current = root; current; current = TransformExtension.NextDescendant(current, root))
+                current.gameObject.layer = layer;
         }
 
         public static void SetLayerRecursively(this GameObject self, string layerName) => self.SetLayerRecursively(LayerMask.NameToLayer(layerName));
@@ -157,17 +160,17 @@ namespace CrowRx
         /// 자신과 자식들 순회 하면서
         /// gameObject 를 이벤트로 콜백 해준다.
         /// 콜백 return 으로 false 를 리턴 할경우 그 오브잭트의 자식들은 순회 하지 않는다.
+        /// 순회 중 콜백에서 계층을 변경하지 않아야 한다.
         /// </summary>
         public static void ChildCirculateCallback(this GameObject self, Func<GameObject, bool> callback)
         {
-            if (!(callback?.Invoke(self) ?? false))
+            if (!(callback?.Invoke(self) ?? false)) return;
+            Transform root = self.transform;
+            Transform current = TransformExtension.NextDescendant(root, root);
+            while (current)
             {
-                return;
-            }
-
-            for (int i = 0, count = self.transform.childCount; i < count; ++i)
-            {
-                self.transform.GetChild(i).gameObject.ChildCirculateCallback(callback);
+                bool includeChildren = callback(current.gameObject);
+                current = TransformExtension.NextDescendant(current, root, includeChildren);
             }
         }
 
@@ -176,25 +179,50 @@ namespace CrowRx
         /// </summary>
         public static string GetHierarchyPath(this GameObject self, GameObject root)
         {
-            string result = string.Empty;
+            if (!self)
+            {
+                return string.Empty;
+            }
 
+            Transform currentTransform = self.transform;
             Transform rootTransform = root ? root.transform : null;
 
-            if (self.GetComponentsInChildren<Transform>().Any(transform => transform == root.transform))
+            if (currentTransform == rootTransform)
             {
-                return result;
+                return string.Empty;
             }
 
-            result = self.name;
-            Transform selfTransform = self.transform;
-
-            while (selfTransform.parent != rootTransform)
+            using PooledObject<List<string>> disposable = ListPool<string>.Get(out List<string> names);
+            int length = 0;
+            while (currentTransform != rootTransform)
             {
-                selfTransform = selfTransform.parent;
-                result = $"{selfTransform.name}/{result}";
+                if (!currentTransform)
+                {
+                    return string.Empty;
+                }
+
+                string name = currentTransform.name;
+                names.Add(name);
+                length += name.Length;
+
+                currentTransform = currentTransform.parent;
             }
 
-            return result;
+            if (names.Count == 1)
+            {
+                return names[0];
+            }
+
+            return string.Create(length + names.Count - 1, names, static (destination, path) =>
+            {
+                int offset = 0;
+                for (int i = path.Count - 1; i >= 0; i--)
+                {
+                    if (i < path.Count - 1) destination[offset++] = '/';
+                    path[i].AsSpan().CopyTo(destination[offset..]);
+                    offset += path[i].Length;
+                }
+            });
         }
 
         public static string GetHierarchyPath(this GameObject self) => self.GetHierarchyPath(null);

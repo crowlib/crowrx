@@ -1,0 +1,7 @@
+{
+    "name": "CrowRx.Editor.Tests",
+    "references": ["CrowRx", "CrowRx.Editor"],
+    "includePlatforms": ["Editor"],
+    "autoReferenced": false,
+    "optionalUnityReferences": ["TestAssemblies"]
+}

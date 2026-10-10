@@ -2,19 +2,20 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
-
 namespace CrowRx.Tasks
 {
     public partial struct CrowTask
     {
-        public static void RunSafe(Func<UniTask> taskFunc, CancellationToken token, bool useCancelLogging = false) => RunSafeAsync(taskFunc, token, useCancelLogging).Forget();
-        public static void RunSafe<T>(Func<UniTask<T>> taskFunc, CancellationToken token, bool useCancelLogging = false) => RunSafeAsync(taskFunc, token, useCancelLogging).Forget();
+        public static void RunSafe(Func<CancellationToken, UniTask> taskFunc, CancellationToken token, bool useCancelLogging = false) => RunSafeAsync(taskFunc, token, useCancelLogging).Forget();
+        public static void RunSafe<T>(Func<CancellationToken, UniTask<T>> taskFunc, CancellationToken token, bool useCancelLogging = false) => RunSafeAsync(taskFunc, token, useCancelLogging).Forget();
 
-        private static async UniTask RunSafeAsync(Func<UniTask> taskFunc, CancellationToken token, bool useCancelLogging)
+        private static async UniTask RunSafeAsync(Func<CancellationToken, UniTask> taskFunc, CancellationToken token, bool useCancelLogging)
         {
             try
             {
-                await taskFunc().AttachExternalCancellation(token);
+                token.ThrowIfCancellationRequested();
+
+                await taskFunc(token);
             }
             catch (OperationCanceledException)
             {
@@ -29,11 +30,13 @@ namespace CrowRx.Tasks
             }
         }
 
-        private static async UniTask<T> RunSafeAsync<T>(Func<UniTask<T>> taskFunc, CancellationToken token, bool useCancelLogging)
+        private static async UniTask<T> RunSafeAsync<T>(Func<CancellationToken, UniTask<T>> taskFunc, CancellationToken token, bool useCancelLogging)
         {
             try
             {
-                return await taskFunc().AttachExternalCancellation(token);
+                token.ThrowIfCancellationRequested();
+
+                return await taskFunc(token);
             }
             catch (OperationCanceledException)
             {

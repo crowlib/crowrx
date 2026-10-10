@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 namespace CrowRx.Tasks.Internal
@@ -11,6 +10,7 @@ namespace CrowRx.Tasks.Internal
 
     internal class StateTuple<T1, T2, T3> : IDisposable
     {
+        internal StateTuple<T1, T2, T3> Next;
         public T1 Item1;
         public T2 Item2;
         public T3 Item3;
@@ -27,18 +27,27 @@ namespace CrowRx.Tasks.Internal
 
     internal static class StatePool<T1, T2, T3>
     {
-        private static readonly ConcurrentQueue<StateTuple<T1, T2, T3>> s_queue = new();
+        private const int MaxCached = 64;
+        private static readonly object Gate = new();
+        private static StateTuple<T1, T2, T3> _head;
+        private static int _count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StateTuple<T1, T2, T3> Create(T1 item1, T2 item2, T3 item3)
         {
-            if (s_queue.TryDequeue(out StateTuple<T1, T2, T3> value))
+            lock (Gate)
             {
-                value.Item1 = item1;
-                value.Item2 = item2;
-                value.Item3 = item3;
-
-                return value;
+                if (_head != null)
+                {
+                    StateTuple<T1, T2, T3> value = _head;
+                    _head = value.Next;
+                    value.Next = null;
+                    _count--;
+                    value.Item1 = item1;
+                    value.Item2 = item2;
+                    value.Item3 = item3;
+                    return value;
+                }
             }
 
             return new StateTuple<T1, T2, T3> { Item1 = item1, Item2 = item2, Item3 = item3 };
@@ -51,7 +60,17 @@ namespace CrowRx.Tasks.Internal
             tuple.Item2 = default;
             tuple.Item3 = default;
 
-            s_queue.Enqueue(tuple);
+            lock (Gate)
+            {
+                if (_count >= MaxCached)
+                {
+                    return;
+                }
+
+                tuple.Next = _head;
+                _head = tuple;
+                _count++;
+            }
         }
     }
 }

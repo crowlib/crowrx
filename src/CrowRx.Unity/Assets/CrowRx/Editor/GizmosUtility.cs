@@ -34,7 +34,7 @@ namespace CrowRx.Editor
         public static void DrawWireCapsule(Vector3 point1, Vector3 point2, float radius)
         {
             Vector3 upOffset = point2 - point1;
-            Vector3 up = upOffset.Equals(default) ? Vector3.up : upOffset.normalized;
+            Vector3 up = upOffset.sqrMagnitude <= Mathf.Epsilon ? Vector3.up : upOffset.normalized;
             Quaternion orientation = Quaternion.FromToRotation(Vector3.up, up);
             Vector3 forward = orientation * Vector3.forward;
             Vector3 right = orientation * Vector3.right;
@@ -169,18 +169,14 @@ namespace CrowRx.Editor
 
         public static void DrawPlane(Vector4 plane, float scale, Color edgeColor, float normalScale, Color normalColor)
         {
-            Vector3 n = Vector3.Normalize(plane);
-            float d = plane.w;
-
-            Vector3 u = Vector3.up;
-            Vector3 r = Vector3.right;
-            if (n == u)
-            {
-                u = r;
-            }
-
-            r = Vector3.Cross(n, u);
-            u = Vector3.Cross(n, r);
+            Vector3 normal = new(plane.x, plane.y, plane.z);
+            float length = normal.magnitude;
+            if (length <= Mathf.Epsilon) return;
+            Vector3 n = normal / length;
+            float d = plane.w / length;
+            Vector3 reference = Mathf.Abs(n.y) < 0.999f ? Vector3.up : Vector3.right;
+            Vector3 r = Vector3.Cross(n, reference).normalized;
+            Vector3 u = Vector3.Cross(n, r);
 
             for (int i = 0; i < 4; i++)
             {
@@ -253,6 +249,7 @@ namespace CrowRx.Editor
 
         public static Vector3 DrawCollider(Collider colliderToDraw)
         {
+            if (!colliderToDraw) return Vector3.zero;
             Vector3 center = colliderToDraw.bounds.center;
 
             switch (colliderToDraw)
@@ -269,7 +266,13 @@ namespace CrowRx.Editor
                 {
                     center = capsuleCollider.center;
 
-                    Vector3 capsuleHalfDirection = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
+                    Vector3 axis = capsuleCollider.direction switch
+                    {
+                        0 => Vector3.right,
+                        2 => Vector3.forward,
+                        _ => Vector3.up
+                    };
+                    Vector3 capsuleHalfDirection = axis * Mathf.Max(0f, capsuleCollider.height * 0.5f - capsuleCollider.radius);
                     Vector3 p1 = capsuleCollider.center - capsuleHalfDirection;
                     Vector3 p2 = capsuleCollider.center + capsuleHalfDirection;
 

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 using UnityEditor;
+using UnityEditor.SceneManagement;
 
 
 namespace CrowRx.Editor
@@ -12,6 +13,37 @@ namespace CrowRx.Editor
 		public PrefabInformation(GameObject g)
 		{
 			originalGameObject = g;
+			Refresh();
+		}
+
+		/// <summary>대상의 현재 프리팹 상태를 다시 조회합니다. 계층 변경 후 호출해 스냅샷을 갱신합니다.</summary>
+		public void Refresh()
+		{
+			isPartOfPrefabStage = isPrefabStageRoot = false;
+			isPartOfPrefabInstance = isPrefabInstanceRoot = false;
+			isPrefabAssetRoot = isPartOfPrefabAsset = false;
+			nearestInstanceRoot = prefabAssetRoot = null;
+			prefabAssetPath = null;
+			prefabAssetType = PrefabAssetType.NotAPrefab;
+			if (!originalGameObject) return;
+
+			PrefabStage stage = PrefabStageUtility.GetPrefabStage(originalGameObject);
+			isPartOfPrefabStage = stage != null;
+			isPrefabStageRoot = stage != null && stage.prefabContentsRoot == originalGameObject;
+			isPartOfPrefabInstance = PrefabUtility.IsPartOfPrefabInstance(originalGameObject);
+			isPrefabInstanceRoot = PrefabUtility.IsAnyPrefabInstanceRoot(originalGameObject);
+			nearestInstanceRoot = PrefabUtility.GetNearestPrefabInstanceRoot(originalGameObject);
+			isPartOfPrefabAsset = PrefabUtility.IsPartOfPrefabAsset(originalGameObject);
+			if (isPartOfPrefabAsset)
+			{
+				prefabAssetRoot = originalGameObject.transform.root.gameObject;
+				isPrefabAssetRoot = prefabAssetRoot == originalGameObject;
+			}
+			prefabAssetType = PrefabUtility.GetPrefabAssetType(originalGameObject);
+			string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(originalGameObject);
+			if (string.IsNullOrEmpty(path) && stage != null) path = stage.assetPath;
+			if (string.IsNullOrEmpty(path) && isPartOfPrefabAsset) path = AssetDatabase.GetAssetPath(originalGameObject);
+			prefabAssetPath = string.IsNullOrEmpty(path) ? null : path;
 		}
 
 		/* Prefab stage ///////////////////////*/
@@ -85,7 +117,7 @@ namespace CrowRx.Editor
 		/// <summary>
 		/// This is object placed into scene.
 		/// </summary>
-		public bool isSceneObject => (!isPartOfPrefabAsset && !isPartOfPrefabStage);
+		public bool isSceneObject => originalGameObject && !isPartOfPrefabAsset && !isPartOfPrefabStage;
 
 		/// <summary>
 		/// This game object is root or part of any prefab instance or asset prefab or prefab in prefab stage.

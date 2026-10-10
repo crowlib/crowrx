@@ -1,13 +1,24 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Reflection;
 
 namespace CrowRx
 {
     public static class RuntimeTypeCache
     {
-        private static readonly List<Type> _cachedTypes = new();
-        private static Dictionary<string, Type> _cachedTypesByName;
+        private sealed class TypeCache
+        {
+            public readonly List<Type> Types;
+            public readonly Dictionary<string, Type> TypesByName;
+
+            public TypeCache(List<Type> types, Dictionary<string, Type> typesByName)
+            {
+                Types = types;
+                TypesByName = typesByName;
+            }
+        }
+
+        private static TypeCache _cache;
 
         private static readonly string[] _exceptStartWithAssemblyNames =
         {
@@ -46,82 +57,122 @@ namespace CrowRx
             ".Examples."
         };
 
-        public static IReadOnlyList<Type> Types
-        {
-            get
-            {
-                if (_cachedTypes.Count == 0)
-                {
-                    GatherTypes();
-                }
+        public static IReadOnlyList<Type> Types => GetCache().Types;
+        public static IReadOnlyDictionary<string, Type> TypesByName => GetCache().TypesByName;
 
-                return _cachedTypes;
+        private static TypeCache GetCache()
+        {
+            if (_cache is null)
+            {
+                GatherTypes();
             }
+
+            return _cache;
         }
 
-        public static IReadOnlyDictionary<string, Type> TypesByName
-        {
-            get
-            {
-                if (_cachedTypes.Count == 0)
-                {
-                    GatherTypes();
-                }
-
-                return _cachedTypesByName;
-            }
-        }
-
+        /// <summary>
+        /// 메인 스레드에서 타입 목록을 갱신합니다. 게임 시작 전에 호출하면 최초 접근의 탐색을 미리 수행할 수 있습니다.
+        /// 완성된 목록과 이름 사전을 함께 공개하며, 실패하면 이전 캐시를 유지합니다.
+        /// </summary>
         public static void GatherTypes()
         {
-            _cachedTypes.Clear();
+#if UNITY_6000_6_OR_NEWER
+            GatherTypes(UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies());
+#else
+            GatherTypes(AppDomain.CurrentDomain.GetAssemblies());
+#endif
+        }
 
-            _cachedTypes.AddRange(
-                AppDomain.CurrentDomain.GetAssemblies()
-                    .Distinct()
-                    .Where(assembly =>
+        private static void GatherTypes(IReadOnlyList<Assembly> assemblies)
+        {
+            TypeCache cache = BuildCache(assemblies);
+            _cache = cache;
+            UnityLog.Info($"Type Count : {cache.TypesByName.Count}");
+        }
+
+        private static TypeCache BuildCache(IReadOnlyList<Assembly> assemblies)
+        {
+            List<Type> types = new();
+            for (int i = 0; i < assemblies.Count; i++)
+            {
+                Assembly assembly = assemblies[i];
+                if (assembly.IsDynamic)
+                {
+                    continue;
+                }
+
+                string assemblyName = assembly.FullName;
+                if (IsExcluded(assemblyName, _exceptStartWithAssemblyNames, _exceptContainsAssemblyNames))
+                {
+                    continue;
+                }
+
+                Type[] assemblyTypes;
+                try
+                {
+                    assemblyTypes = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException e)
+                {
+                    // 로드된 타입만 사용하고 누락된 null 항목은 제외합니다.
+                    assemblyTypes = e.Types;
+                    UnityLog.Warning($"Some types could not be loaded from {assemblyName}.");
+                }
+
+                foreach (Type type in assemblyTypes)
+                {
+                    if (type is null || type.IsGenericTypeDefinition || !type.IsVisible || type.IsDefined(typeof(ObsoleteAttribute), true))
                     {
-                        if (assembly.IsDynamic)
-                        {
-                            return false;
-                        }
+                        continue;
+                    }
 
-                        string assemblyName = assembly.GetName().FullName;
-
-                        return
-                            !_exceptStartWithAssemblyNames.Any(assemblyName.StartsWith) &&
-                            !_exceptContainsAssemblyNames.Any(assemblyName.Contains);
-                    })
-                    .SelectMany(assembly => assembly.GetTypes())
-                    .Where(type =>
+                    if (IsExcluded(type.FullName, _exceptStartWithTypeNames, _exceptContainsTypeNames))
                     {
-                        if (type.IsGenericTypeDefinition ||
-                            !type.IsVisible ||
-                            Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute)) is not null)
-                        {
-                            return false;
-                        }
+                        continue;
+                    }
 
-                        string typeName = type.FullName;
+                    types.Add(type);
+                }
+            }
 
-                        return typeName is not null &&
-                               !_exceptStartWithTypeNames.Any(typeName.StartsWith) &&
-                               !_exceptContainsTypeNames.Any(typeName.Contains);
-                    }));
-
-            _cachedTypesByName = new Dictionary<string, Type>();
-
-            foreach (Type type in _cachedTypes)
+            Dictionary<string, Type> typesByName = new(types.Count);
+            foreach (Type type in types)
             {
                 string typeName = type.GetRealTypeFullName();
 
-                if (!_cachedTypesByName.TryAdd(typeName, type))
+                if (!typesByName.TryAdd(typeName, type))
                 {
-                    UnityLog.Warning($"Same Type Name : {typeName}\nold:{_cachedTypesByName[typeName]}\nnew:{type}");
+                    UnityLog.Warning($"Same Type Name : {typeName}\nold:{typesByName[typeName]}\nnew:{type}");
                 }
             }
 
-            UnityLog.Info($"Type Count : {_cachedTypesByName.Count}");
+            return new TypeCache(types, typesByName);
+        }
+
+        private static bool IsExcluded(string name, string[] prefixes, string[] fragments)
+        {
+            if (name is null)
+            {
+                return true;
+            }
+
+            foreach (string prefix in prefixes)
+            {
+                if (name.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            foreach (string fragment in fragments)
+            {
+                if (name.Contains(fragment))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -1,0 +1,6 @@
+{
+    "name": "CrowRx.Runtime.Tests",
+    "references": ["CrowRx", "UniTask", "UnityEngine.UI"],
+    "autoReferenced": false,
+    "optionalUnityReferences": ["TestAssemblies"]
+}

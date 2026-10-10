@@ -24,9 +24,13 @@ namespace CrowRx
                 return true;
             }
 
-            UnityLog.Exception(new InvalidOperationException($"[{self.GetType().Name}]<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+            if (capabilities.Count > 1)
+            {
+                UnityLog.Exception(new InvalidOperationException($"[{self.GetType().Name}]<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+            }
 
             component = default;
+
             return false;
         }
 
