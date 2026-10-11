@@ -18,15 +18,14 @@ namespace CrowRx
             using PooledObject<List<T>> disposable = ListPool<T>.Get(out List<T> capabilities);
             self.GetComponents(capabilities);
 
-            if (capabilities.Count == 1)
+            switch (capabilities.Count)
             {
-                component = capabilities[0];
-                return true;
-            }
-
-            if (capabilities.Count > 1)
-            {
-                UnityLog.Exception(new InvalidOperationException($"[{self.GetType().Name}]<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+                case 1:
+                    component = capabilities[0];
+                    return true;
+                case > 1:
+                    UnityLog.Exception(new InvalidOperationException($"[{self.GetType().Name}]<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+                    break;
             }
 
             component = default;

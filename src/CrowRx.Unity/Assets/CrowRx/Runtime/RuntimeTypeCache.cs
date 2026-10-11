@@ -8,19 +8,19 @@ namespace CrowRx
     {
         private sealed class TypeCache
         {
-            public readonly List<Type> Types;
-            public readonly Dictionary<string, Type> TypesByName;
+            public readonly List<Type> CachedTypes;
+            public readonly Dictionary<string, Type> CachedTypesByName;
 
-            public TypeCache(List<Type> types, Dictionary<string, Type> typesByName)
+            public TypeCache(List<Type> cachedTypes, Dictionary<string, Type> cachedTypesByName)
             {
-                Types = types;
-                TypesByName = typesByName;
+                CachedTypes = cachedTypes;
+                CachedTypesByName = cachedTypesByName;
             }
         }
 
         private static TypeCache _cache;
 
-        private static readonly string[] _exceptStartWithAssemblyNames =
+        private static readonly string[] s_exceptStartWithAssemblyNames =
         {
             "System.",
             "UnityEngine.",
@@ -30,7 +30,7 @@ namespace CrowRx
             "Bee.",
         };
 
-        private static readonly string[] _exceptContainsAssemblyNames =
+        private static readonly string[] s_exceptContainsAssemblyNames =
         {
             "mscorlib,",
             ".Unity,",
@@ -40,14 +40,14 @@ namespace CrowRx
             "CrowRx.Network.Sample,",
         };
 
-        private static readonly string[] _exceptStartWithTypeNames =
+        private static readonly string[] s_exceptStartWithTypeNames =
         {
             "System.",
             "Microsoft.",
             "Unity.VisualScripting.",
         };
 
-        private static readonly string[] _exceptContainsTypeNames =
+        private static readonly string[] s_exceptContainsTypeNames =
         {
             "<>",
             ".CompilerServices.",
@@ -57,8 +57,8 @@ namespace CrowRx
             ".Examples."
         };
 
-        public static IReadOnlyList<Type> Types => GetCache().Types;
-        public static IReadOnlyDictionary<string, Type> TypesByName => GetCache().TypesByName;
+        public static IReadOnlyList<Type> Types => GetCache().CachedTypes;
+        public static IReadOnlyDictionary<string, Type> TypesByName => GetCache().CachedTypesByName;
 
         private static TypeCache GetCache()
         {
@@ -87,13 +87,13 @@ namespace CrowRx
         {
             TypeCache cache = BuildCache(assemblies);
             _cache = cache;
-            UnityLog.Info($"Type Count : {cache.TypesByName.Count}");
+            UnityLog.Info($"Type Count : {cache.CachedTypesByName.Count}");
         }
 
         private static TypeCache BuildCache(IReadOnlyList<Assembly> assemblies)
         {
             List<Type> types = new();
-            for (int i = 0; i < assemblies.Count; i++)
+            for (int i = 0, count = assemblies.Count; i < count; i++)
             {
                 Assembly assembly = assemblies[i];
                 if (assembly.IsDynamic)
@@ -102,7 +102,7 @@ namespace CrowRx
                 }
 
                 string assemblyName = assembly.FullName;
-                if (IsExcluded(assemblyName, _exceptStartWithAssemblyNames, _exceptContainsAssemblyNames))
+                if (IsExcluded(assemblyName, s_exceptStartWithAssemblyNames, s_exceptContainsAssemblyNames))
                 {
                     continue;
                 }
@@ -126,7 +126,7 @@ namespace CrowRx
                         continue;
                     }
 
-                    if (IsExcluded(type.FullName, _exceptStartWithTypeNames, _exceptContainsTypeNames))
+                    if (IsExcluded(type.FullName, s_exceptStartWithTypeNames, s_exceptContainsTypeNames))
                     {
                         continue;
                     }

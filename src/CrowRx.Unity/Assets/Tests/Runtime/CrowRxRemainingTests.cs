@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using CrowRx;
 using CrowRx.Tasks;
 using CrowRx.Helper;
-using CrowRx.Utility;
 using Cysharp.Threading.Tasks;
 using NUnit.Framework;
 using Unity.Profiling;
@@ -18,6 +17,7 @@ using Object = UnityEngine.Object;
 public class CrowRxRemainingTests
 {
     public static readonly Dictionary<string, int> AllocationMetrics = new();
+
     [Test]
     public void TypeNamesPreserveDeclaringTypesAndDistributeGenericArguments()
     {
@@ -53,27 +53,44 @@ public class CrowRxRemainingTests
         var root = new GameObject("root");
         try
         {
-            var branch = new GameObject("branch"); branch.transform.SetParent(root.transform);
-            var nested = new GameObject("match"); nested.transform.SetParent(branch.transform);
-            var direct = new GameObject("match"); direct.transform.SetParent(root.transform);
+            var branch = new GameObject("branch");
+            branch.transform.SetParent(root.transform);
+            var nested = new GameObject("match");
+            nested.transform.SetParent(branch.transform);
+            var direct = new GameObject("match");
+            direct.transform.SetParent(root.transform);
             Assert.That(root.transform.FindChildDeep("match"), Is.SameAs(direct.transform));
             Assert.That(root.transform.FindChildDeep("branch/match"), Is.SameAs(nested.transform));
             var visited = new List<GameObject>();
-            root.ChildCirculateCallback(node => { visited.Add(node); return node != branch; });
+            root.ChildCirculateCallback(node =>
+            {
+                visited.Add(node);
+                return node != branch;
+            });
             Assert.That(visited, Is.EqualTo(new[] { root, branch, direct }));
             root.SetLayerRecursively(2);
             foreach (Transform node in root.GetComponentsInChildren<Transform>(true)) Assert.That(node.gameObject.layer, Is.EqualTo(2));
             Transform leaf = branch.transform;
             for (int i = 0; i < 128; i++)
             {
-                var child = new GameObject(i == 127 ? "deep target" : "deep"); child.transform.SetParent(leaf); leaf = child.transform;
+                var child = new GameObject(i == 127 ? "deep target" : "deep");
+                child.transform.SetParent(leaf);
+                leaf = child.transform;
             }
+
             Assert.That(root.transform.FindChildDeep("deep target"), Is.SameAs(leaf));
             int count = 0;
-            root.ChildCirculateCallback(_ => { count++; return true; });
+            root.ChildCirculateCallback(_ =>
+            {
+                count++;
+                return true;
+            });
             Assert.That(count, Is.EqualTo(132));
         }
-        finally { Object.DestroyImmediate(root); }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
     }
 
     [TestCase(null, "")]
@@ -91,8 +108,10 @@ public class CrowRxRemainingTests
         var unrelated = new GameObject("other");
         try
         {
-            var child = new GameObject("child"); child.transform.SetParent(root.transform);
-            var leaf = new GameObject("leaf"); leaf.transform.SetParent(child.transform);
+            var child = new GameObject("child");
+            child.transform.SetParent(root.transform);
+            var leaf = new GameObject("leaf");
+            leaf.transform.SetParent(child.transform);
             Assert.That(leaf.GetHierarchyPath(), Is.EqualTo("root/child/leaf"));
             Assert.That(leaf.GetHierarchyPath(root), Is.EqualTo("child/leaf"));
             Assert.That(leaf.GetHierarchyPath(child), Is.EqualTo("leaf"));
@@ -103,7 +122,11 @@ public class CrowRxRemainingTests
             child.name = "";
             Assert.That(leaf.GetHierarchyPath(root), Is.EqualTo("/leaf"));
         }
-        finally { Object.DestroyImmediate(root); Object.DestroyImmediate(unrelated); }
+        finally
+        {
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(unrelated);
+        }
     }
 
     [Test]
@@ -124,7 +147,10 @@ public class CrowRxRemainingTests
             Assert.That(root.TryGetSingleComponent<BoxCollider>(out found), Is.False);
             Assert.That(found, Is.Null);
         }
-        finally { Object.DestroyImmediate(root); }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
     }
 
     [Test]
@@ -151,6 +177,7 @@ public class CrowRxRemainingTests
             Assert.That(Mathm.IsArrival(-Vector3.one, Vector3.zero, distance),
                 Is.EqualTo(Vector3.Dot(-Vector3.one, distance.normalized) < 0));
         }
+
         var tinyMovement = new Vector3(-float.Epsilon, 0, 0);
         var smallDistance = new Vector3(0.001f, 0, 0);
         Assert.That(Mathm.IsArrival(tinyMovement, Vector3.zero, smallDistance),
@@ -160,19 +187,24 @@ public class CrowRxRemainingTests
     [Test]
     public void WhenAnyConsumesSynchronousSuccessesAndLoserFailures()
     {
-        var first = new CountedSource(); var second = new CountedSource();
-        first.Succeed(); second.Fail(new InvalidOperationException("loser"));
+        var first = new CountedSource();
+        var second = new CountedSource();
+        first.Succeed();
+        second.Fail(new InvalidOperationException("loser"));
         Assert.That(CrowTask.WhenAny(new[] { first.Task, second.Task }, 2).GetAwaiter().GetResult(), Is.Zero);
-        Assert.That(first.Consumed, Is.EqualTo(1)); Assert.That(second.Consumed, Is.EqualTo(1));
+        Assert.That(first.Consumed, Is.EqualTo(1));
+        Assert.That(second.Consumed, Is.EqualTo(1));
     }
 
     [Test]
     public void WhenAnyRetainsPromiseUntilLateLoserCompletes()
     {
-        var winner = new CountedSource(); var loser = new CountedSource();
+        var winner = new CountedSource();
+        var loser = new CountedSource();
         var old = CrowTask.WhenAny(new[] { winner.Task, loser.Task }, 2);
         var oldSource = Source(old);
-        winner.Succeed(); Assert.That(old.GetAwaiter().GetResult(), Is.Zero);
+        winner.Succeed();
+        Assert.That(old.GetAwaiter().GetResult(), Is.Zero);
         var next = CrowTask.WhenAny(new[] { UniTask.CompletedTask }, 1);
         Assert.That(Source(next), Is.Not.SameAs(oldSource));
         Assert.That(next.GetAwaiter().GetResult(), Is.Zero);
@@ -189,12 +221,15 @@ public class CrowRxRemainingTests
     public void WhenAnyPropagatesFirstFaultAndCancellation()
     {
         var failure = new InvalidOperationException("winner failed");
-        var first = new CountedSource(); var second = new CountedSource();
+        var first = new CountedSource();
+        var second = new CountedSource();
         var fault = CrowTask.WhenAny(new[] { first.Task, second.Task }, 2);
         second.Fail(failure);
         Assert.That(Assert.Throws<InvalidOperationException>(() => fault.GetAwaiter().GetResult()), Is.SameAs(failure));
-        first.Succeed(); Assert.That(first.Consumed, Is.EqualTo(1));
-        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        first.Succeed();
+        Assert.That(first.Consumed, Is.EqualTo(1));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
         var cancellation = CrowTask.WhenAny(new[] { UniTask.FromCanceled(canceled.Token), UniTask.CompletedTask }, 2);
         Assert.That(cancellation.Status, Is.EqualTo(UniTaskStatus.Canceled));
         Assert.Throws<OperationCanceledException>(() => cancellation.GetAwaiter().GetResult());
@@ -224,8 +259,10 @@ public class CrowRxRemainingTests
             Task[] workers = new Task[sources.Length];
             for (int i = 0; i < sources.Length; i++)
             {
-                var source = sources[i]; workers[i] = System.Threading.Tasks.Task.Run(source.Succeed);
+                var source = sources[i];
+                workers[i] = System.Threading.Tasks.Task.Run(source.Succeed);
             }
+
             System.Threading.Tasks.Task.WaitAll(workers);
             Assert.That(observed.Result, Is.InRange(0, sources.Length - 1));
             foreach (var source in sources) Assert.That(source.Consumed, Is.EqualTo(1));
@@ -237,7 +274,9 @@ public class CrowRxRemainingTests
     {
         SerializedReferenceList<int> values = new List<int> { 1, 2 };
         int pairs = 0;
-        foreach (int outer in values) foreach (int inner in values) pairs += outer * inner;
+        foreach (int outer in values)
+        foreach (int inner in values)
+            pairs += outer * inner;
         Assert.That(pairs, Is.EqualTo(9));
         using var enumerator = ((IEnumerable<int>)values).GetEnumerator();
         Assert.That(enumerator.MoveNext(), Is.True);
@@ -252,12 +291,16 @@ public class CrowRxRemainingTests
         SerializedReferenceList<int> values = new List<int> { 1, 2 };
         Vector3[] corners = { new(0, 0, 0), new(1, 0, 0), new(1, 1, 0), new(0, 1, 0) };
         for (int i = 0; i < 10; i++) CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
-        _ = "Already".ToUpperFirst(); _ = Mathm.RectIntersect(corners, new(-1, 0), new(2, 0));
+        _ = "Already".ToUpperFirst();
+        _ = Mathm.RectIntersect(corners, new(-1, 0), new(2, 0));
         var options = ProfilerRecorderOptions.StartImmediately | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
         using var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc", 2048, options);
-        var calibration = new byte[1024]; GC.KeepAlive(calibration);
-        int calibrationCount = recorder.Count; recorder.Reset();
-        int sum = 0; bool intersects = false;
+        var calibration = new byte[1024];
+        GC.KeepAlive(calibration);
+        int calibrationCount = recorder.Count;
+        recorder.Reset();
+        int sum = 0;
+        bool intersects = false;
         for (int i = 0; i < 100; i++)
         {
             sum += CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
@@ -265,31 +308,46 @@ public class CrowRxRemainingTests
             intersects |= Mathm.RectIntersect(corners, new(-1, 0), new(2, 0));
             _ = "Already".ToUpperFirst();
         }
+
         int allocations = recorder.Count;
-        Assert.That(recorder.Valid, Is.True); Assert.That(calibrationCount, Is.GreaterThan(0));
-        Assert.That(sum, Is.EqualTo(300)); Assert.That(intersects, Is.True); Assert.That(allocations, Is.Zero);
+        Assert.That(recorder.Valid, Is.True);
+        Assert.That(calibrationCount, Is.GreaterThan(0));
+        Assert.That(sum, Is.EqualTo(300));
+        Assert.That(intersects, Is.True);
+        Assert.That(allocations, Is.Zero);
     }
 
     [Test]
     public void WarmedAsynchronousWhenAnyAlsoReusesItsContinuationState()
     {
-        var first = new CountedSource(); var second = new CountedSource();
+        var first = new CountedSource();
+        var second = new CountedSource();
         var inputs = new UniTask[2];
         Action run = () =>
         {
-            first.Reset(); second.Reset(); inputs[0] = first.Task; inputs[1] = second.Task;
+            first.Reset();
+            second.Reset();
+            inputs[0] = first.Task;
+            inputs[1] = second.Task;
             var winner = CrowTask.WhenAny(inputs, 2);
-            first.Succeed(); winner.GetAwaiter().GetResult(); second.Succeed();
+            first.Succeed();
+            winner.GetAwaiter().GetResult();
+            second.Succeed();
         };
         for (int i = 0; i < 10; i++) run();
         var options = ProfilerRecorderOptions.StartImmediately | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
         using var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc", 2048, options);
-        var calibration = new byte[1024]; GC.KeepAlive(calibration);
-        int calibrationCount = recorder.Count; recorder.Reset();
+        var calibration = new byte[1024];
+        GC.KeepAlive(calibration);
+        int calibrationCount = recorder.Count;
+        recorder.Reset();
         for (int i = 0; i < 100; i++) run();
         int allocations = recorder.Count;
-        Assert.That(recorder.Valid, Is.True); Assert.That(calibrationCount, Is.GreaterThan(0));
-        Assert.That(allocations, Is.Zero); Assert.That(first.Consumed, Is.EqualTo(1)); Assert.That(second.Consumed, Is.EqualTo(1));
+        Assert.That(recorder.Valid, Is.True);
+        Assert.That(calibrationCount, Is.GreaterThan(0));
+        Assert.That(allocations, Is.Zero);
+        Assert.That(first.Consumed, Is.EqualTo(1));
+        Assert.That(second.Consumed, Is.EqualTo(1));
     }
 
     [Test]
@@ -309,7 +367,8 @@ public class CrowRxRemainingTests
         try
         {
             var fade = root.AddComponent<CanvasGroupFade>();
-            using var source = new CancellationTokenSource(); source.Cancel();
+            using var source = new CancellationTokenSource();
+            source.Cancel();
             var canceled = fade.FadeOutInAsync(0, 1, 0, 0, 0, true, source.Token);
             Assert.That(canceled.Status, Is.EqualTo(UniTaskStatus.Canceled));
             Assert.Throws<OperationCanceledException>(() => canceled.GetAwaiter().GetResult());
@@ -317,7 +376,10 @@ public class CrowRxRemainingTests
             fade.FadeInOut(0, 1, 0, 0, float.NaN, true);
             LogAssert.NoUnexpectedReceived();
         }
-        finally { Object.DestroyImmediate(root); }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
     }
 
     [UnityTest]
@@ -333,17 +395,24 @@ public class CrowRxRemainingTests
             _ = "already".ToUpperFirst();
             var options = ProfilerRecorderOptions.StartImmediately | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
             using var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc", 4096, options);
-            var calibration = new byte[1024]; GC.KeepAlive(calibration);
+            var calibration = new byte[1024];
+            GC.KeepAlive(calibration);
             int arrayControl = recorder.Count;
-            recorder.Reset(); GC.KeepAlive(new CountedSource()); int referenceControl = recorder.Count;
-            recorder.Reset(); GC.KeepAlive(new string('x', 64)); int stringControl = recorder.Count;
+            recorder.Reset();
+            GC.KeepAlive(new CountedSource());
+            int referenceControl = recorder.Count;
+            recorder.Reset();
+            GC.KeepAlive(new string('x', 64));
+            int stringControl = recorder.Count;
             recorder.Reset();
             for (int i = 0; i < 100; i++)
             {
                 var builder = new System.Text.StringBuilder();
-                builder.Append(char.ToUpperInvariant("already"[0])); builder.Append("already"[1..]);
+                builder.Append(char.ToUpperInvariant("already"[0]));
+                builder.Append("already"[1..]);
                 GC.KeepAlive(builder.ToString());
             }
+
             int oldUpper = recorder.Count;
             recorder.Reset();
             for (int i = 0; i < 100; i++) GC.KeepAlive("already".ToUpperFirst());
@@ -353,25 +422,41 @@ public class CrowRxRemainingTests
             recorder.Reset();
             for (int i = 0; i < 100; i++) CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
             int synchronousWhenAny = recorder.Count;
-            var first = new CountedSource(); var second = new CountedSource(); var asynchronousInputs = new UniTask[2];
+            var first = new CountedSource();
+            var second = new CountedSource();
+            var asynchronousInputs = new UniTask[2];
             Action run = () =>
             {
-                first.Reset(); second.Reset(); asynchronousInputs[0] = first.Task; asynchronousInputs[1] = second.Task;
+                first.Reset();
+                second.Reset();
+                asynchronousInputs[0] = first.Task;
+                asynchronousInputs[1] = second.Task;
                 var winner = CrowTask.WhenAny(asynchronousInputs, 2);
-                first.Succeed(); winner.GetAwaiter().GetResult(); second.Succeed();
+                first.Succeed();
+                winner.GetAwaiter().GetResult();
+                second.Succeed();
             };
             for (int i = 0; i < 10; i++) run();
-            recorder.Reset(); for (int i = 0; i < 100; i++) run();
+            recorder.Reset();
+            for (int i = 0; i < 100; i++) run();
             int asynchronousWhenAny = recorder.Count;
             AllocationMetrics.Clear();
-            AllocationMetrics.Add("arrayControl", arrayControl); AllocationMetrics.Add("referenceControl", referenceControl);
-            AllocationMetrics.Add("stringControl", stringControl); AllocationMetrics.Add("legacyUpper100", oldUpper);
+            AllocationMetrics.Add("arrayControl", arrayControl);
+            AllocationMetrics.Add("referenceControl", referenceControl);
+            AllocationMetrics.Add("stringControl", stringControl);
+            AllocationMetrics.Add("legacyUpper100", oldUpper);
             AllocationMetrics.Add("newUpper100", newUpper);
-            AllocationMetrics.Add("synchronousWhenAny100", synchronousWhenAny); AllocationMetrics.Add("asynchronousWhenAny100", asynchronousWhenAny);
+            AllocationMetrics.Add("synchronousWhenAny100", synchronousWhenAny);
+            AllocationMetrics.Add("asynchronousWhenAny100", asynchronousWhenAny);
             UnityEngine.Debug.Log($"CrowRx GC comparison: array={arrayControl} reference={referenceControl} string={stringControl} legacyUpper100={oldUpper} newUpper100={newUpper} synchronousWhenAny100={synchronousWhenAny} asynchronousWhenAny100={asynchronousWhenAny}");
-            Assert.That(recorder.Valid, Is.True); Assert.That(arrayControl, Is.GreaterThan(0));
+            Assert.That(recorder.Valid, Is.True);
+            Assert.That(arrayControl, Is.GreaterThan(0));
             if (stringControl > 0 && oldUpper > 0) Assert.That(newUpper, Is.LessThan(oldUpper));
-            if (referenceControl > 0) { Assert.That(synchronousWhenAny, Is.Zero); Assert.That(asynchronousWhenAny, Is.Zero); }
+            if (referenceControl > 0)
+            {
+                Assert.That(synchronousWhenAny, Is.Zero);
+                Assert.That(asynchronousWhenAny, Is.Zero);
+            }
         }
         finally
         {
@@ -386,7 +471,8 @@ public class CrowRxRemainingTests
         var list = new List<int> { 1 };
         SerializedReferenceList<int> wrapper = list;
         Assert.That(wrapper.Items, Is.SameAs(list));
-        wrapper.Add(2); Assert.That(list.Count, Is.EqualTo(2));
+        wrapper.Add(2);
+        Assert.That(list.Count, Is.EqualTo(2));
         Assert.That((List<int>)wrapper, Is.SameAs(list));
         Assert.That((SerializedReferenceList<int>)(List<int>)null, Is.Null);
         Assert.That((List<int>)(SerializedReferenceList<int>)null, Is.Null);
@@ -395,6 +481,7 @@ public class CrowRxRemainingTests
 
     private static object Source(UniTask<int> task) => typeof(UniTask<int>).GetField("source", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(task);
     private static async Task<int> Observe(UniTask<int> task) => await task;
+
     private sealed class CountedSource : IUniTaskSource
     {
         private UniTaskCompletionSourceCore<AsyncUnit> _core;
@@ -402,8 +489,19 @@ public class CrowRxRemainingTests
         public UniTask Task => new(this, _core.Version);
         public void Succeed() => _core.TrySetResult(AsyncUnit.Default);
         public void Fail(Exception exception) => _core.TrySetException(exception);
-        public void Reset() { _core.Reset(); Consumed = 0; }
-        public void GetResult(short token) { Interlocked.Increment(ref Consumed); _core.GetResult(token); }
+
+        public void Reset()
+        {
+            _core.Reset();
+            Consumed = 0;
+        }
+
+        public void GetResult(short token)
+        {
+            Interlocked.Increment(ref Consumed);
+            _core.GetResult(token);
+        }
+
         public UniTaskStatus GetStatus(short token) => _core.GetStatus(token);
         public UniTaskStatus UnsafeGetStatus() => _core.UnsafeGetStatus();
         public void OnCompleted(Action<object> continuation, object state, short token) => _core.OnCompleted(continuation, state, token);
@@ -412,7 +510,15 @@ public class CrowRxRemainingTests
 
 public class NameOuter<T>
 {
-    public class First<U> { }
-    public class Second<U> { }
-    public class Plain { }
+    public class First<U>
+    {
+    }
+
+    public class Second<U>
+    {
+    }
+
+    public class Plain
+    {
+    }
 }

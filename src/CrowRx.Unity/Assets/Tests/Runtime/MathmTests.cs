@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Threading;
 using System.Threading.Tasks;
+using CrowRx;
 using CrowRx.Tasks;
-using CrowRx.Utility;
 using Cysharp.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
@@ -18,15 +18,34 @@ public class MathmTests
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         int calls = 0;
-        CrowTask.RunSafe(token => { calls++; return UniTask.CompletedTask; }, canceled.Token);
-        CrowTask.RunSafe<int>(token => { calls++; return UniTask.FromResult(1); }, canceled.Token);
+        CrowTask.RunSafe(token =>
+        {
+            calls++;
+            return UniTask.CompletedTask;
+        }, canceled.Token);
+        CrowTask.RunSafe<int>(token =>
+        {
+            calls++;
+            return UniTask.FromResult(1);
+        }, canceled.Token);
         Assert.That(calls, Is.Zero);
         using var active = new CancellationTokenSource();
         CancellationToken received = default, receivedGeneric = default;
-        CrowTask.RunSafe(token => { received = token; calls++; return UniTask.CompletedTask; }, active.Token);
-        CrowTask.RunSafe<int>(token => { receivedGeneric = token; calls++; return UniTask.FromResult(1); }, active.Token);
+        CrowTask.RunSafe(token =>
+        {
+            received = token;
+            calls++;
+            return UniTask.CompletedTask;
+        }, active.Token);
+        CrowTask.RunSafe<int>(token =>
+        {
+            receivedGeneric = token;
+            calls++;
+            return UniTask.FromResult(1);
+        }, active.Token);
         Assert.That(calls, Is.EqualTo(2));
-        Assert.That(received, Is.EqualTo(active.Token)); Assert.That(receivedGeneric, Is.EqualTo(active.Token));
+        Assert.That(received, Is.EqualTo(active.Token));
+        Assert.That(receivedGeneric, Is.EqualTo(active.Token));
 
         Matrix4x4 original = Matrix4x4.identity;
         Matrix4x4 target = Matrix4x4.Scale(new Vector3(2, 3, 4));
@@ -120,8 +139,11 @@ public class MathmTests
 
             MeshCollider convex = root.AddComponent<MeshCollider>();
             Assert.That(convex.Contains(root.transform.position), Is.False);
-            mesh = new Mesh { vertices = new[] { Vector3.zero, Vector3.right, Vector3.up, Vector3.forward },
-                triangles = new[] { 0, 2, 1, 0, 1, 3, 0, 3, 2, 1, 2, 3 } };
+            mesh = new Mesh
+            {
+                vertices = new[] { Vector3.zero, Vector3.right, Vector3.up, Vector3.forward },
+                triangles = new[] { 0, 2, 1, 0, 1, 3, 0, 3, 2, 1, 2, 3 }
+            };
             convex.sharedMesh = mesh;
             convex.convex = true;
             Physics.SyncTransforms();
@@ -157,8 +179,10 @@ public class MathmTests
         Vector2 d2 = Mathm.SpringDampen(ref v2, strength, time);
         Vector3 d3 = Mathm.SpringDampen(ref v3, strength, time);
         Assert.That(float.IsNaN(scalar) || float.IsInfinity(scalar) || float.IsNaN(displacement) || float.IsInfinity(displacement), Is.False);
-        Assert.That(v2.x, Is.EqualTo(scalar)); Assert.That(v3.x, Is.EqualTo(scalar));
-        Assert.That(d2.x, Is.EqualTo(displacement)); Assert.That(d3.x, Is.EqualTo(displacement));
+        Assert.That(v2.x, Is.EqualTo(scalar));
+        Assert.That(v3.x, Is.EqualTo(scalar));
+        Assert.That(d2.x, Is.EqualTo(displacement));
+        Assert.That(d3.x, Is.EqualTo(displacement));
         Assert.That(d2.y, Is.EqualTo(-2 * displacement).Within(0.00001f));
         Assert.That(d3.z, Is.EqualTo(3 * displacement).Within(0.00001f));
         if (strength <= 0)
@@ -166,8 +190,18 @@ public class MathmTests
             Assert.That(scalar, Is.EqualTo(2));
             Assert.That(displacement, Is.EqualTo(1.92f).Within(0.00001f));
         }
-        if (time <= 0) { Assert.That(scalar, Is.EqualTo(2)); Assert.That(displacement, Is.Zero); }
-        if (strength >= 1000) { Assert.That(scalar, Is.Zero); Assert.That(displacement, Is.Zero); }
+
+        if (time <= 0)
+        {
+            Assert.That(scalar, Is.EqualTo(2));
+            Assert.That(displacement, Is.Zero);
+        }
+
+        if (strength >= 1000)
+        {
+            Assert.That(scalar, Is.Zero);
+            Assert.That(displacement, Is.Zero);
+        }
     }
 
     [Test]
@@ -191,15 +225,28 @@ public class MathmTests
     [Test]
     public void PreCanceledLerpNeverCallsGetterOrSetter()
     {
-        using var source = new CancellationTokenSource(); source.Cancel();
+        using var source = new CancellationTokenSource();
+        source.Cancel();
         foreach (float duration in new[] { 0f, 1f })
         foreach (bool reset in new[] { false, true })
         foreach (bool sameValue in new[] { false, true })
         {
             int writes = 0, reads = 0;
-            Assert.That(Observe(Mathm.LerpAsync(_ => writes++, () => { reads++; return 0f; }, 0f, sameValue ? 0f : 1f, duration, reset, true, source.Token)).IsCanceled, Is.True);
-            Assert.That(Observe(Mathm.LerpAsync(_ => writes++, () => { reads++; return Vector3.zero; }, Vector3.zero, sameValue ? Vector3.zero : Vector3.one, duration, reset, true, source.Token)).IsCanceled, Is.True);
-            Assert.That(Observe(Mathm.LerpAsync(AnimationCurve.Linear(0, 0, 1, 1), _ => writes++, () => { reads++; return Vector3.zero; }, Vector3.zero, sameValue ? Vector3.zero : Vector3.one, duration, reset, true, source.Token)).IsCanceled, Is.True);
+            Assert.That(Observe(Mathm.LerpAsync(_ => writes++, () =>
+            {
+                reads++;
+                return 0f;
+            }, 0f, sameValue ? 0f : 1f, duration, reset, true, source.Token)).IsCanceled, Is.True);
+            Assert.That(Observe(Mathm.LerpAsync(_ => writes++, () =>
+            {
+                reads++;
+                return Vector3.zero;
+            }, Vector3.zero, sameValue ? Vector3.zero : Vector3.one, duration, reset, true, source.Token)).IsCanceled, Is.True);
+            Assert.That(Observe(Mathm.LerpAsync(AnimationCurve.Linear(0, 0, 1, 1), _ => writes++, () =>
+            {
+                reads++;
+                return Vector3.zero;
+            }, Vector3.zero, sameValue ? Vector3.zero : Vector3.one, duration, reset, true, source.Token)).IsCanceled, Is.True);
             Assert.That(writes + reads, Is.Zero);
         }
     }
@@ -220,11 +267,17 @@ public class MathmTests
             Assert.That(vectorTask.IsCanceled, Is.EqualTo(!immediate));
             if (immediate) vectorTask.GetAwaiter().GetResult();
         }
+
         using var getter = new CancellationTokenSource();
         int writes = 0;
-        Task task = Observe(Mathm.LerpAsync(_ => writes++, () => { getter.Cancel(); return 0f; }, 0f, 1f, 1f, false, true, getter.Token));
+        Task task = Observe(Mathm.LerpAsync(_ => writes++, () =>
+        {
+            getter.Cancel();
+            return 0f;
+        }, 0f, 1f, 1f, false, true, getter.Token));
         yield return WaitForCompletion(task);
-        Assert.That(task.IsCanceled, Is.True); Assert.That(writes, Is.Zero);
+        Assert.That(task.IsCanceled, Is.True);
+        Assert.That(writes, Is.Zero);
     }
 
     [UnityTest]
@@ -232,11 +285,20 @@ public class MathmTests
     {
         using var scalar = new CancellationTokenSource();
         using var vector = new CancellationTokenSource();
-        Task scalarTask = Observe(Mathm.LerpAsync(value => { if (value == 1f) scalar.Cancel(); }, () => 0f, 0f, 1f, 0.000001f, true, true, scalar.Token));
-        Task vectorTask = Observe(Mathm.LerpAsync(value => { if (value == Vector3.one) vector.Cancel(); }, () => Vector3.zero, Vector3.zero, Vector3.one, 0.000001f, true, true, vector.Token));
-        yield return WaitForCompletion(scalarTask); yield return WaitForCompletion(vectorTask);
-        scalarTask.GetAwaiter().GetResult(); vectorTask.GetAwaiter().GetResult();
-        Assert.That(scalar.IsCancellationRequested, Is.True); Assert.That(vector.IsCancellationRequested, Is.True);
+        Task scalarTask = Observe(Mathm.LerpAsync(value =>
+        {
+            if (value == 1f) scalar.Cancel();
+        }, () => 0f, 0f, 1f, 0.000001f, true, true, scalar.Token));
+        Task vectorTask = Observe(Mathm.LerpAsync(value =>
+        {
+            if (value == Vector3.one) vector.Cancel();
+        }, () => Vector3.zero, Vector3.zero, Vector3.one, 0.000001f, true, true, vector.Token));
+        yield return WaitForCompletion(scalarTask);
+        yield return WaitForCompletion(vectorTask);
+        scalarTask.GetAwaiter().GetResult();
+        vectorTask.GetAwaiter().GetResult();
+        Assert.That(scalar.IsCancellationRequested, Is.True);
+        Assert.That(vector.IsCancellationRequested, Is.True);
     }
 
     [Test]
@@ -256,12 +318,19 @@ public class MathmTests
         float scalar = -1;
         Vector3 vector = Vector3.zero;
         int scalarReads = 0;
-        Task scalarTask = Observe(Mathm.LerpAsync(value => scalar = value, () => { scalarReads++; return 0.5f; }, 0f, 1f, 0.02f, false, true, CancellationToken.None));
+        Task scalarTask = Observe(Mathm.LerpAsync(value => scalar = value, () =>
+        {
+            scalarReads++;
+            return 0.5f;
+        }, 0f, 1f, 0.02f, false, true, CancellationToken.None));
         Task vectorTask = Observe(Mathm.LerpAsync(AnimationCurve.Linear(0, 0, 1, 0), value => vector = value, () => Vector3.zero, Vector3.zero, Vector3.one, 0.02f, true, true, CancellationToken.None));
         yield return WaitForCompletion(scalarTask);
         yield return WaitForCompletion(vectorTask);
-        scalarTask.GetAwaiter().GetResult(); vectorTask.GetAwaiter().GetResult();
-        Assert.That(scalar, Is.EqualTo(1)); Assert.That(vector, Is.EqualTo(Vector3.one)); Assert.That(scalarReads, Is.EqualTo(1));
+        scalarTask.GetAwaiter().GetResult();
+        vectorTask.GetAwaiter().GetResult();
+        Assert.That(scalar, Is.EqualTo(1));
+        Assert.That(vector, Is.EqualTo(Vector3.one));
+        Assert.That(scalarReads, Is.EqualTo(1));
     }
 
     [UnityTest]
@@ -274,7 +343,8 @@ public class MathmTests
         source.Cancel();
         int before = writes;
         yield return WaitForCompletion(task);
-        Assert.That(task.IsCanceled, Is.True); Assert.That(writes, Is.EqualTo(before));
+        Assert.That(task.IsCanceled, Is.True);
+        Assert.That(writes, Is.EqualTo(before));
     }
 
     [UnityTest]
@@ -290,10 +360,15 @@ public class MathmTests
             yield return WaitForCompletion(unscaled);
             unscaled.GetAwaiter().GetResult();
             Assert.That(scaled.IsCompleted, Is.False);
-            source.Cancel(); yield return WaitForCompletion(scaled);
+            source.Cancel();
+            yield return WaitForCompletion(scaled);
             Assert.That(scaled.IsCanceled, Is.True);
         }
-        finally { source.Cancel(); Time.timeScale = previousScale; }
+        finally
+        {
+            source.Cancel();
+            Time.timeScale = previousScale;
+        }
     }
 
     // 설치된 UniTask.AsTask는 취소를 Faulted로 바꿉니다. 실제 await의 취소 의미를 검사합니다.

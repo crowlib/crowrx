@@ -2,11 +2,9 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
-
 namespace CrowRx.Tasks
 {
     using Internal;
-
 
     public partial struct CrowTask
     {
@@ -17,7 +15,9 @@ namespace CrowRx.Tasks
     internal sealed class WhenAnyPromise : IUniTaskSource<int>
     {
         private const int MaxCached = 64;
-        private static readonly object PoolGate = new();
+
+        private static readonly object s_poolGate = new();
+
         private static WhenAnyPromise _poolHead;
         private static int _poolCount;
         private WhenAnyPromise _next;
@@ -25,7 +25,6 @@ namespace CrowRx.Tasks
         private int _winnerClaimed;
         private int _consumptionState;
         private UniTaskCompletionSourceCore<int> _core;
-
 
         public static UniTask<int> Create(UniTask[] tasks, int tasksLength)
         {
@@ -40,7 +39,7 @@ namespace CrowRx.Tasks
             }
 
             WhenAnyPromise promise;
-            lock (PoolGate)
+            lock (s_poolGate)
             {
                 promise = _poolHead;
                 if (promise is not null)
@@ -50,6 +49,7 @@ namespace CrowRx.Tasks
                     _poolCount--;
                 }
             }
+
             promise ??= new WhenAnyPromise();
 
             // 등록 루프와 모든 입력 완료, 호출자의 GetResult가 모두 끝난 뒤에만 재사용합니다.
@@ -147,7 +147,7 @@ namespace CrowRx.Tasks
             // 단일 카운터를 마지막으로 감소시킨 경로만 반환하므로 재사용 중 중복 반환도 막습니다.
             _core.Reset();
 
-            lock (PoolGate)
+            lock (s_poolGate)
             {
                 if (_poolCount >= MaxCached)
                 {

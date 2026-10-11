@@ -14,14 +14,14 @@ namespace CrowRx
     {
         [SerializeReference] private List<T> items;
 
-        public SerializedReferenceList() => items = new();
+        public SerializedReferenceList() => items = new List<T>();
         private SerializedReferenceList(List<T> list) => items = list;
 
         // 묵시적 변환: SerializedReferenceList<T> → List<T>
         public static implicit operator List<T>(SerializedReferenceList<T> container) => container?.items;
 
         // 묵시적 변환: List<T> → SerializedReferenceList<T>
-        public static implicit operator SerializedReferenceList<T>(List<T> list) => list is null ? null : new(list);
+        public static implicit operator SerializedReferenceList<T>(List<T> list) => list is null ? null : new SerializedReferenceList<T>(list);
 
         public List<T>.Enumerator GetEnumerator() => items.GetEnumerator();
 

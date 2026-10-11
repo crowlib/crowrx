@@ -6,8 +6,6 @@ using Cysharp.Threading.Tasks;
 
 namespace CrowRx.Helper
 {
-    using Utility;
-
     [RequireComponent(typeof(CanvasGroup))]
     public class CanvasGroupFade : MonoBehaviourCrowRx
     {

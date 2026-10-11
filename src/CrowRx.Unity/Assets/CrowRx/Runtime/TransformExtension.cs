@@ -20,15 +20,7 @@ namespace CrowRx
             return null;
         }
 
-        public static T FindUpwardIncludeThis<T>(this Transform self)
-        {
-            if (self.TryGetComponent(out T result))
-            {
-                return result;
-            }
-
-            return FindUpwardInternal<T>(self);
-        }
+        public static T FindUpwardIncludeThis<T>(this Transform self) => self.TryGetComponent(out T result) ? result : FindUpwardInternal<T>(self);
 
         public static T FindUpward<T>(this Transform self)
         {

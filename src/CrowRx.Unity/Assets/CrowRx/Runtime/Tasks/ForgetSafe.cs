@@ -1,7 +1,6 @@
 ﻿using System;
 using Cysharp.Threading.Tasks;
 
-
 namespace CrowRx.Tasks
 {
     public static partial class UniTaskExtension

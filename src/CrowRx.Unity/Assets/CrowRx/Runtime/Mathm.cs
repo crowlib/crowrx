@@ -3,7 +3,7 @@ using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
-namespace CrowRx.Utility
+namespace CrowRx
 {
     public static class Mathm
     {
@@ -80,7 +80,7 @@ namespace CrowRx.Utility
             {
                 if (ss == 0d)
                 {
-                    if (a.x != c.x || a.y != c.y)
+                    if (!Mathf.Approximately(a.x, c.x) || !Mathf.Approximately(a.y, c.y))
                     {
                         return false;
                     }
@@ -134,7 +134,7 @@ namespace CrowRx.Utility
             {
                 t = (qx * sy - qy * sx) / denominator;
                 double u = (qx * ry - qy * rx) / denominator;
-                if (!(t >= 0d && t <= 1d && u >= 0d && u <= 1d))
+                if (!(t is >= 0d and <= 1d && u is >= 0d and <= 1d))
                 {
                     return false;
                 }
@@ -282,13 +282,14 @@ namespace CrowRx.Utility
 
         /// <summary>
         /// This code is not framerate-independent:
-        /// 
+        /// <code>
         /// target.position += velocity;
         /// velocity = Vector3.Lerp(velocity, Vector3.zero, Time.deltaTime * 9f);
-        /// 
+        /// </code>
         /// But this code is:
-        /// 
+        /// <code>
         /// target.position += NGUIMath.SpringDampen(ref velocity, 9f, Time.deltaTime);
+        /// </code>
         /// </summary>
         //@@by ps2 from NGUIMath
         // 유한한 strength는 [0, 1000], deltaTime은 [0, 1]로 제한하며 기존 ms 단위와 0.06 계수를 유지합니다.
@@ -347,7 +348,7 @@ namespace CrowRx.Utility
                 return ms * 0.06f;
             }
 
-            if (strength == 1000f)
+            if (Mathf.Approximately(strength, 1000f))
             {
                 attenuation = 0f; return 0f;
             }
@@ -525,7 +526,9 @@ namespace CrowRx.Utility
         }
 
         /// <summary>활성 Box/Sphere/Capsule/convex MeshCollider의 내부와 경계를 0.00001 world 단위 오차로 검사합니다. 그 외 대상은 false입니다.</summary>
+        /// <param name="worldPoint">포함 여부를 판단할 worldPoint</param>
         /// <param name="useRigidbody">이전 호출과의 호환성을 위한 인수이며 포함 판정에는 영향을 주지 않습니다.</param>
+        /// <param name="collider">worldPoint 포함 여부를 판단할 Collider</param>
         public static bool Contains(this Collider collider, Vector3 worldPoint, bool useRigidbody = true)
         {
             if (!collider || !collider.enabled || !collider.gameObject.activeInHierarchy)
@@ -533,8 +536,7 @@ namespace CrowRx.Utility
                 return false;
             }
 
-            if (!(collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider ||
-                  collider is MeshCollider { convex: true, sharedMesh: not null }))
+            if (collider is not (BoxCollider or SphereCollider or CapsuleCollider or MeshCollider { convex: true, sharedMesh: not null }))
             {
                 return false;
             }

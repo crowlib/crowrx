@@ -12,12 +12,7 @@ namespace CrowRx
                 return false;
             }
 
-            if (self == target)
-            {
-                return isIncludeSelf;
-            }
-
-            return target.IsAssignableFrom(self);
+            return self == target ? isIncludeSelf : target.IsAssignableFrom(self);
         }
 
         public static bool InheritsFrom(this Type self, Type target) => self.InheritsFrom(target, true);
@@ -95,14 +90,15 @@ namespace CrowRx
 
         private static void AppendNamedType(StringBuilder builder, Type type, bool fullName, Type[] arguments, ref int argumentIndex)
         {
-            if (fullName && type.DeclaringType != null && !type.IsGenericParameter)
+            switch (fullName)
             {
-                AppendNamedType(builder, type.DeclaringType, true, arguments, ref argumentIndex);
-                builder.Append('.');
-            }
-            else if (fullName && !type.IsGenericParameter && !string.IsNullOrEmpty(type.Namespace))
-            {
-                builder.Append(type.Namespace).Append('.');
+                case true when type.DeclaringType != null && !type.IsGenericParameter:
+                    AppendNamedType(builder, type.DeclaringType, true, arguments, ref argumentIndex);
+                    builder.Append('.');
+                    break;
+                case true when !type.IsGenericParameter && !string.IsNullOrEmpty(type.Namespace):
+                    builder.Append(type.Namespace).Append('.');
+                    break;
             }
 
             string name = type.Name;

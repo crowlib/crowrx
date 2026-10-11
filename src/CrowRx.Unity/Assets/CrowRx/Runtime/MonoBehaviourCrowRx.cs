@@ -111,7 +111,10 @@ namespace CrowRx
 #if UNITY_EDITOR
             private void EditorUpdate()
             {
-                if (!MoveNext(0)) Stop();
+                if (!MoveNext(0))
+                {
+                    Stop();
+                }
             }
 #endif
 

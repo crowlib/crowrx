@@ -7,6 +7,7 @@ namespace CrowRx
         /// <summary>
         /// 시작 문자열과 끝 문자열 사이의 문자열을 반환한다.
         /// </summary>
+        /// <param name="self">원본 문자열</param>
         /// <param name="start">시작 문자열</param>
         /// <param name="end">끝 문자열</param>
         /// <returns>시작과 끝 문자열 둘 중의 하나라도 포함되어 있지 않으면 빈 문자열을 반환한다.</returns>

@@ -15,8 +15,11 @@ namespace CrowRx
             for (Transform current = target ? target.transform : null; current; current = current.parent)
             {
                 if (ExecuteEvents.CanHandleEvent<T>(current.gameObject))
+                {
                     return ExecuteEvents.Execute(current.gameObject, eventData, functor);
+                }
             }
+
             return false;
         }
 
@@ -24,7 +27,9 @@ namespace CrowRx
         /// 포인터 아래에서 자신을 제외한 첫 유효 raycast 대상과 그 부모에 이벤트를 전달합니다.
         /// 해당 대상이 처리하지 못해도 다음 raycast 대상으로 넘어가지 않습니다.
         /// </summary>
+        /// <param name="target">raycast 대상. 이벤트 전달에서는 제외됩니다.</param>
         /// <param name="eventData">raycast와 이벤트 전달에 그대로 사용하는 PointerEventData입니다. 다른 종류의 데이터는 false를 반환합니다.</param>
+        /// <param name="functor">선정된 대상에 전달될 이벤트 핸들러입니다.</param>
         /// <returns>대상 또는 부모의 이벤트 핸들러를 실행했으면 true입니다. EventSystem이 없으면 false입니다.</returns>
         public static bool ExecuteEventExceptThis<T>(this GameObject target, BaseEventData eventData, ExecuteEvents.EventFunction<T> functor) where T : IEventSystemHandler
         {
@@ -67,15 +72,14 @@ namespace CrowRx
             using PooledObject<List<T>> disposable = ListPool<T>.Get(out List<T> capabilities);
             self.GetComponents(capabilities);
 
-            if (capabilities.Count == 1)
+            switch (capabilities.Count)
             {
-                component = capabilities[0];
-                return true;
-            }
-
-            if (capabilities.Count > 1)
-            {
-                UnityLog.Exception(new InvalidOperationException($"<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+                case 1:
+                    component = capabilities[0];
+                    return true;
+                case > 1:
+                    UnityLog.Exception(new InvalidOperationException($"<{self.name}> requires at most one [{typeof(T).Name}] component."), self);
+                    break;
             }
 
             component = default;
@@ -151,7 +155,9 @@ namespace CrowRx
         {
             Transform root = self.transform;
             for (Transform current = root; current; current = TransformExtension.NextDescendant(current, root))
+            {
                 current.gameObject.layer = layer;
+            }
         }
 
         public static void SetLayerRecursively(this GameObject self, string layerName) => self.SetLayerRecursively(LayerMask.NameToLayer(layerName));
@@ -164,7 +170,11 @@ namespace CrowRx
         /// </summary>
         public static void ChildCirculateCallback(this GameObject self, Func<GameObject, bool> callback)
         {
-            if (!(callback?.Invoke(self) ?? false)) return;
+            if (!(callback?.Invoke(self) ?? false))
+            {
+                return;
+            }
+
             Transform root = self.transform;
             Transform current = TransformExtension.NextDescendant(root, root);
             while (current)
@@ -218,7 +228,11 @@ namespace CrowRx
                 int offset = 0;
                 for (int i = path.Count - 1; i >= 0; i--)
                 {
-                    if (i < path.Count - 1) destination[offset++] = '/';
+                    if (i < path.Count - 1)
+                    {
+                        destination[offset++] = '/';
+                    }
+
                     path[i].AsSpan().CopyTo(destination[offset..]);
                     offset += path[i].Length;
                 }

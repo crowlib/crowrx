@@ -28,14 +28,16 @@ namespace CrowRx.Tasks.Internal
     internal static class StatePool<T1, T2, T3>
     {
         private const int MaxCached = 64;
-        private static readonly object Gate = new();
-        private static StateTuple<T1, T2, T3> _head;
+
+        private static readonly object s_gate = new();
         private static int _count;
+
+        private static StateTuple<T1, T2, T3> _head;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StateTuple<T1, T2, T3> Create(T1 item1, T2 item2, T3 item3)
         {
-            lock (Gate)
+            lock (s_gate)
             {
                 if (_head != null)
                 {
@@ -60,7 +62,7 @@ namespace CrowRx.Tasks.Internal
             tuple.Item2 = default;
             tuple.Item3 = default;
 
-            lock (Gate)
+            lock (s_gate)
             {
                 if (_count >= MaxCached)
                 {
