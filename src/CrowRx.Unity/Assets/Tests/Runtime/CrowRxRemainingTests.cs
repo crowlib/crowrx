@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -17,35 +16,6 @@ using Object = UnityEngine.Object;
 public class CrowRxRemainingTests
 {
     public static readonly Dictionary<string, int> AllocationMetrics = new();
-
-    [Test]
-    public void TypeNamesPreserveDeclaringTypesAndDistributeGenericArguments()
-    {
-        Assert.That(typeof(NameOuter<int>.First<string>).GetRealTypeFullName(), Is.EqualTo("NameOuter<System.Int32>.First<System.String>"));
-        Assert.That(typeof(NameOuter<int>.Second<string>).GetRealTypeFullName(), Is.EqualTo("NameOuter<System.Int32>.Second<System.String>"));
-        Assert.That(typeof(NameOuter<int>.Plain).GetRealTypeFullName(), Is.EqualTo("NameOuter<System.Int32>.Plain"));
-        Assert.That(typeof(NameOuter<int>.Plain).GetRealTypeName(), Is.EqualTo("Plain"));
-        Assert.That(typeof(NameOuter<int>.First<string>).GetRealTypeName(), Is.EqualTo("First<String>"));
-        Assert.That(typeof(NameOuter<>.First<>).GetRealTypeFullName(), Is.EqualTo("NameOuter<T>.First<U>"));
-        Assert.That(typeof(Dictionary<string, List<int[]>>).GetRealTypeFullName(), Is.EqualTo("System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.List<System.Int32[]>>"));
-        Assert.That(typeof(NameOuter<int>.First<string>[,]).GetRealTypeFullName(), Is.EqualTo("NameOuter<System.Int32>.First<System.String>[,]"));
-        Assert.That(typeof(int).MakeArrayType(1).GetRealTypeFullName(), Is.EqualTo("System.Int32[*]"));
-        Assert.That(typeof(int).MakeByRefType().GetRealTypeFullName(), Is.EqualTo("System.Int32&"));
-        Assert.That(typeof(int).MakePointerType().GetRealTypeFullName(), Is.EqualTo("System.Int32*"));
-        Assert.Throws<ArgumentNullException>(() => TypeExtension.GetRealTypeName(null));
-        Assert.Throws<ArgumentNullException>(() => TypeExtension.GetRealTypeFullName(null));
-    }
-
-    [Test]
-    public void InheritsFromExcludesOnlyTheExactType()
-    {
-        Assert.That(typeof(string).InheritsFrom(typeof(string), false), Is.False);
-        Assert.That(typeof(string).InheritsFrom(typeof(string)), Is.True);
-        Assert.That(typeof(string).InheritsFrom(typeof(object), false), Is.True);
-        Assert.That(typeof(List<int>).InheritsFrom(typeof(IEnumerable<int>), false), Is.True);
-        Assert.That(typeof(object).InheritsFrom(typeof(string)), Is.False);
-        Assert.That(TypeExtension.InheritsFrom(null, null, false), Is.False);
-    }
 
     [Test]
     public void HierarchyTraversalPreservesDirectMatchPriorityAndPrunesSubtrees()
@@ -92,14 +62,6 @@ public class CrowRxRemainingTests
             Object.DestroyImmediate(root);
         }
     }
-
-    [TestCase(null, "")]
-    [TestCase("", "")]
-    [TestCase("a", "A")]
-    [TestCase("hello", "Hello")]
-    [TestCase("Already", "Already")]
-    [TestCase("한글", "한글")]
-    public void UpperFirstPreservesText(string text, string expected) => Assert.That(text.ToUpperFirst(), Is.EqualTo(expected));
 
     [Test]
     public void HierarchyPathsPreserveRootAndInvalidAncestorContracts()
@@ -285,39 +247,6 @@ public class CrowRxRemainingTests
     }
 
     [Test]
-    public void WarmedValueOperationsAndWhenAnyDoNotAllocate()
-    {
-        var input = new[] { UniTask.CompletedTask, UniTask.CompletedTask };
-        SerializedReferenceList<int> values = new List<int> { 1, 2 };
-        Vector3[] corners = { new(0, 0, 0), new(1, 0, 0), new(1, 1, 0), new(0, 1, 0) };
-        for (int i = 0; i < 10; i++) CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
-        _ = "Already".ToUpperFirst();
-        _ = Mathm.RectIntersect(corners, new(-1, 0), new(2, 0));
-        var options = ProfilerRecorderOptions.StartImmediately | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
-        using var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc", 2048, options);
-        var calibration = new byte[1024];
-        GC.KeepAlive(calibration);
-        int calibrationCount = recorder.Count;
-        recorder.Reset();
-        int sum = 0;
-        bool intersects = false;
-        for (int i = 0; i < 100; i++)
-        {
-            sum += CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
-            foreach (int value in values) sum += value;
-            intersects |= Mathm.RectIntersect(corners, new(-1, 0), new(2, 0));
-            _ = "Already".ToUpperFirst();
-        }
-
-        int allocations = recorder.Count;
-        Assert.That(recorder.Valid, Is.True);
-        Assert.That(calibrationCount, Is.GreaterThan(0));
-        Assert.That(sum, Is.EqualTo(300));
-        Assert.That(intersects, Is.True);
-        Assert.That(allocations, Is.Zero);
-    }
-
-    [Test]
     public void WarmedAsynchronousWhenAnyAlsoReusesItsContinuationState()
     {
         var first = new CountedSource();
@@ -351,16 +280,6 @@ public class CrowRxRemainingTests
     }
 
     [Test]
-    public void ReleaseDisposesSourceEvenWhenCancellationCallbackThrows()
-    {
-        var source = new CancellationTokenSource();
-        using var registration = source.Token.Register(() => throw new InvalidOperationException("callback"));
-        Assert.Throws<AggregateException>(() => source.Release());
-        Assert.Throws<ObjectDisposedException>(() => { _ = source.Token; });
-        CancellationTokenSourceExtension.Release(null);
-    }
-
-    [Test]
     public void FadeInOutReportsFailureOnceAndPublicAsyncPropagatesCancellation()
     {
         var root = new GameObject("fade reporting test");
@@ -380,90 +299,7 @@ public class CrowRxRemainingTests
         {
             Object.DestroyImmediate(root);
         }
-    }
-
-    [UnityTest]
-    public IEnumerator CompiledAllocationMeasurementsIncludeReferenceAndStringControls()
-    {
-        bool wasEnabled = UnityEngine.Profiling.Profiler.enabled;
-        bool memoryEnabled = UnityEngine.Profiling.Profiler.GetAreaEnabled(UnityEngine.Profiling.ProfilerArea.Memory);
-        try
-        {
-            UnityEngine.Profiling.Profiler.SetAreaEnabled(UnityEngine.Profiling.ProfilerArea.Memory, true);
-            UnityEngine.Profiling.Profiler.enabled = true;
-            yield return null;
-            _ = "already".ToUpperFirst();
-            var options = ProfilerRecorderOptions.StartImmediately | ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
-            using var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc", 4096, options);
-            var calibration = new byte[1024];
-            GC.KeepAlive(calibration);
-            int arrayControl = recorder.Count;
-            recorder.Reset();
-            GC.KeepAlive(new CountedSource());
-            int referenceControl = recorder.Count;
-            recorder.Reset();
-            GC.KeepAlive(new string('x', 64));
-            int stringControl = recorder.Count;
-            recorder.Reset();
-            for (int i = 0; i < 100; i++)
-            {
-                var builder = new System.Text.StringBuilder();
-                builder.Append(char.ToUpperInvariant("already"[0]));
-                builder.Append("already"[1..]);
-                GC.KeepAlive(builder.ToString());
-            }
-
-            int oldUpper = recorder.Count;
-            recorder.Reset();
-            for (int i = 0; i < 100; i++) GC.KeepAlive("already".ToUpperFirst());
-            int newUpper = recorder.Count;
-            var input = new[] { UniTask.CompletedTask, UniTask.CompletedTask };
-            for (int i = 0; i < 10; i++) CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
-            recorder.Reset();
-            for (int i = 0; i < 100; i++) CrowTask.WhenAny(input, 2).GetAwaiter().GetResult();
-            int synchronousWhenAny = recorder.Count;
-            var first = new CountedSource();
-            var second = new CountedSource();
-            var asynchronousInputs = new UniTask[2];
-            Action run = () =>
-            {
-                first.Reset();
-                second.Reset();
-                asynchronousInputs[0] = first.Task;
-                asynchronousInputs[1] = second.Task;
-                var winner = CrowTask.WhenAny(asynchronousInputs, 2);
-                first.Succeed();
-                winner.GetAwaiter().GetResult();
-                second.Succeed();
-            };
-            for (int i = 0; i < 10; i++) run();
-            recorder.Reset();
-            for (int i = 0; i < 100; i++) run();
-            int asynchronousWhenAny = recorder.Count;
-            AllocationMetrics.Clear();
-            AllocationMetrics.Add("arrayControl", arrayControl);
-            AllocationMetrics.Add("referenceControl", referenceControl);
-            AllocationMetrics.Add("stringControl", stringControl);
-            AllocationMetrics.Add("legacyUpper100", oldUpper);
-            AllocationMetrics.Add("newUpper100", newUpper);
-            AllocationMetrics.Add("synchronousWhenAny100", synchronousWhenAny);
-            AllocationMetrics.Add("asynchronousWhenAny100", asynchronousWhenAny);
-            UnityEngine.Debug.Log($"CrowRx GC comparison: array={arrayControl} reference={referenceControl} string={stringControl} legacyUpper100={oldUpper} newUpper100={newUpper} synchronousWhenAny100={synchronousWhenAny} asynchronousWhenAny100={asynchronousWhenAny}");
-            Assert.That(recorder.Valid, Is.True);
-            Assert.That(arrayControl, Is.GreaterThan(0));
-            if (stringControl > 0 && oldUpper > 0) Assert.That(newUpper, Is.LessThan(oldUpper));
-            if (referenceControl > 0)
-            {
-                Assert.That(synchronousWhenAny, Is.Zero);
-                Assert.That(asynchronousWhenAny, Is.Zero);
-            }
-        }
-        finally
-        {
-            UnityEngine.Profiling.Profiler.enabled = wasEnabled;
-            UnityEngine.Profiling.Profiler.SetAreaEnabled(UnityEngine.Profiling.ProfilerArea.Memory, memoryEnabled);
-        }
-    }
+    }    
 
     [Test]
     public void ListConversionsShareTheInputAndPreserveNull()

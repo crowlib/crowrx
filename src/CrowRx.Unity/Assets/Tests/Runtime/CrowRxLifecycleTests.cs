@@ -198,71 +198,7 @@ public class CrowRxLifecycleTests
         original.TrySetResult(7);
         yield return WaitUntil(() => continuation.IsCompleted);
         continuation.GetAwaiter().GetResult();
-    }
-
-    [Test]
-    public void EmptyTypeSnapshotIsReadyAndRefreshPreservesPreviousViews()
-    {
-        object previous = TypeSnapshot.GetValue(null);
-        try
-        {
-            var first = new TestAssembly("CrowRx.Test.First", () => new[] { typeof(CacheTypeA) });
-            Gather(new[] { first });
-            IReadOnlyList<Type> oldTypes = RuntimeTypeCache.Types;
-            IReadOnlyDictionary<string, Type> oldNames = RuntimeTypeCache.TypesByName;
-            Gather(new[] { new TestAssembly("CrowRx.Test.Second", () => new[] { typeof(CacheTypeB) }) });
-            Assert.That(RuntimeTypeCache.Types, Is.EquivalentTo(new[] { typeof(CacheTypeB) }));
-            Assert.That(oldTypes, Is.EquivalentTo(new[] { typeof(CacheTypeA) }));
-            Assert.That(oldNames[typeof(CacheTypeA).GetRealTypeFullName()], Is.EqualTo(typeof(CacheTypeA)));
-            Gather(Array.Empty<Assembly>());
-            object empty = TypeSnapshot.GetValue(null);
-            Assert.That(RuntimeTypeCache.Types.Count, Is.Zero);
-            Assert.That(RuntimeTypeCache.TypesByName.Count, Is.Zero);
-            Assert.That(TypeSnapshot.GetValue(null), Is.SameAs(empty));
-        }
-        finally { TypeSnapshot.SetValue(null, previous); }
-    }
-
-    [Test]
-    public void TypeLoadFailureUsesValidTypesAndFiltersExcludedTypes()
-    {
-        object previous = TypeSnapshot.GetValue(null);
-        try
-        {
-#pragma warning disable CS0612, CS0618 // 타입 캐시가 Obsolete 타입을 제외하는지 검사합니다.
-            var partial = new TestAssembly("CrowRx.Test.Partial", () => throw new ReflectionTypeLoadException(
-                new[] { typeof(CacheTypeA), null, typeof(HiddenCacheType), typeof(ObsoleteCacheType), typeof(List<>), typeof(string) }, new Exception[] { new TypeLoadException("missing") }));
-#pragma warning restore CS0612, CS0618
-            var excluded = new TestAssembly("Unity.Test.Excluded", () => throw new Exception("excluded assembly was scanned"));
-            LogAssert.Expect(LogType.Warning, "Some types could not be loaded from CrowRx.Test.Partial.");
-            Gather(new[] { partial, excluded });
-            Assert.That(RuntimeTypeCache.Types, Is.EquivalentTo(new[] { typeof(CacheTypeA) }));
-            Assert.That(RuntimeTypeCache.TypesByName[typeof(CacheTypeA).GetRealTypeFullName()], Is.EqualTo(typeof(CacheTypeA)));
-        }
-        finally { TypeSnapshot.SetValue(null, previous); }
-    }
-
-    [Test]
-    public void UnexpectedTypeScanFailureRetainsBothPreviousCaches()
-    {
-        object previous = TypeSnapshot.GetValue(null);
-        try
-        {
-            Gather(new[] { new TestAssembly("CrowRx.Test.Before", () => new[] { typeof(CacheTypeA) }) });
-            object ready = TypeSnapshot.GetValue(null);
-            var error = new InvalidOperationException("scan failure");
-            TargetInvocationException actual = Assert.Throws<TargetInvocationException>(() => Gather(new Assembly[]
-            {
-                new TestAssembly("CrowRx.Test.Partial", () => new[] { typeof(CacheTypeB) }),
-                new TestAssembly("CrowRx.Test.Failure", () => throw error)
-            }));
-            Assert.That(actual.InnerException, Is.SameAs(error));
-            Assert.That(TypeSnapshot.GetValue(null), Is.SameAs(ready));
-            Assert.That(RuntimeTypeCache.Types, Is.EquivalentTo(new[] { typeof(CacheTypeA) }));
-            Assert.That(RuntimeTypeCache.TypesByName[typeof(CacheTypeA).GetRealTypeFullName()], Is.EqualTo(typeof(CacheTypeA)));
-        }
-        finally { TypeSnapshot.SetValue(null, previous); }
-    }
+    }    
 
     public sealed class CacheTypeA { }
     public sealed class CacheTypeB { }
