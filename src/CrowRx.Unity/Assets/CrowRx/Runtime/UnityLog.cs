@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Unity.Scripting.LifecycleManagement;
 
 namespace CrowRx
 {
@@ -23,7 +24,7 @@ namespace CrowRx
             void ILogger.Exception(Exception exception) => UnityEngine.Debug.LogException(exception);
         }
 
-        private static IUnityLogger _logger = new DefaultLogger();
+        [NoAutoStaticsCleanup] private static IUnityLogger _logger = new DefaultLogger();
 
         public static void SetLogger(IUnityLogger logger)
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 namespace CrowRx.Tasks.Internal
 {
@@ -25,14 +26,14 @@ namespace CrowRx.Tasks.Internal
         public void Dispose() => StatePool<T1, T2, T3>.Return(this);
     }
 
-    internal static class StatePool<T1, T2, T3>
+    internal static partial class StatePool<T1, T2, T3>
     {
         private const int MaxCached = 64;
 
         private static readonly object s_gate = new();
-        private static int _count;
 
-        private static StateTuple<T1, T2, T3> _head;
+        [AutoStaticsCleanup] private static int _count;
+        [AutoStaticsCleanup] private static StateTuple<T1, T2, T3> _head;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StateTuple<T1, T2, T3> Create(T1 item1, T2 item2, T3 item3)

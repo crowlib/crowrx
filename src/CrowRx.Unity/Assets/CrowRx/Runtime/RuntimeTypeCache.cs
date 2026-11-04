@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 
 namespace CrowRx
 {
-    public static class RuntimeTypeCache
+    public static partial class RuntimeTypeCache
     {
         private sealed class TypeCache
         {
@@ -18,7 +19,7 @@ namespace CrowRx
             }
         }
 
-        private static TypeCache _cache;
+        [AutoStaticsCleanup] private static TypeCache _cache;
 
         private static readonly string[] s_exceptStartWithAssemblyNames =
         {

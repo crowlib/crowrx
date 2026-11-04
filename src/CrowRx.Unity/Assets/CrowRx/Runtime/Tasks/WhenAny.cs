@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using Unity.Scripting.LifecycleManagement;
 using Cysharp.Threading.Tasks;
 
 namespace CrowRx.Tasks
@@ -12,14 +13,15 @@ namespace CrowRx.Tasks
         public static UniTask<int> WhenAny(UniTask[] tasks, int tasksLength) => WhenAnyPromise.Create(tasks, tasksLength);
     }
 
-    internal sealed class WhenAnyPromise : IUniTaskSource<int>
+    internal sealed partial class WhenAnyPromise : IUniTaskSource<int>
     {
         private const int MaxCached = 64;
 
         private static readonly object s_poolGate = new();
 
-        private static WhenAnyPromise _poolHead;
-        private static int _poolCount;
+        [AutoStaticsCleanup] private static WhenAnyPromise _poolHead;
+        [AutoStaticsCleanup] private static int _poolCount;
+
         private WhenAnyPromise _next;
         private int _remaining;
         private int _winnerClaimed;
