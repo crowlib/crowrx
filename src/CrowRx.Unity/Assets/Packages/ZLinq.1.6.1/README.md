@@ -3,13 +3,13 @@ ZLinq
 [![CI](https://github.com/Cysharp/ZLinq/actions/workflows/build-debug.yaml/badge.svg)](https://github.com/Cysharp/ZLinq/actions/workflows/build-debug.yaml)
 [![Benchmark](https://github.com/Cysharp/ZLinq/actions/workflows/benchmark.yaml/badge.svg)](https://github.com/Cysharp/ZLinq/actions/workflows/benchmark.yaml)
 [![NuGet](https://img.shields.io/nuget/v/ZLinq)](https://www.nuget.org/packages/ZLinq)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Cysharp/ZLinq)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/Cysharp/ZLinq)
 
 Zero allocation LINQ with LINQ to Span, LINQ to SIMD, and LINQ to Tree (FileSystem, JSON, GameObject, etc.) for all .NET platforms(netstandard2.0, 2.1, net8, net9) and Unity, Godot.
 
 ![](img/benchmarkhead.jpg)
 
-Unlike regular LINQ, ZLinq doesn't increase allocations when adding more method chains, and it also has higher basic performance. You can check various benchmark patterns at [GitHub Actions/Benchmark](https://github.com/Cysharp/ZLinq/actions/runs/19324633887). ZLinq shows high performance in almost all patterns, with some benchmarks showing overwhelming differences.
+Unlike regular LINQ, ZLinq doesn't increase allocations when adding more method chains, and it also has higher basic performance. You can check various benchmark patterns at [GitHub Actions/Benchmark](https://github.com/Cysharp/ZLinq/actions/runs/19324633887). ZLinq shows high performance in almost all patterns, with some benchmarks showing overwhelming differences. A third-party comparison with other LINQ libraries is also available at [.NET Matrix](https://matrix.dev-team.org/?category=linq-queries&library=ZLinq).
 
 As a bonus, LINQ operators and optimizations equivalent to .NET 10 can be used in .NET Framework 4.8 (netstandard2.0) and Unity (netstandard2.1).
 
@@ -166,6 +166,8 @@ If you absolutely need the raw internal array, you can `Deconstruct` it to `(T[]
 
 Since `ZLinq` is not `IEnumerable<T>`, it cannot be passed to `String.Join`. `JoinToString` provides the same functionality as `String.Join`, returning a string joined with the separator.
 
+On .NET 9+ with C# 14, `String.Join(separator, values)` can also be called directly with a `ValueEnumerable<T>`; it forwards to `JoinToString` via C# 14 extension members.
+
 Range and Sequence
 ---
 In .NET 10, `Enumerable.Sequence` and `Enumerable.InfiniteSequence` have been added, improving the expressiveness of Range operations. ZLinq also implements these, so they can be used. However, since they require `INumber<T>` and `IAdditionalOperator<T>`, they are limited to .NET 8 and above. ZLinq makes `Sequence` and `InfiniteSequence` available on all .NET Platforms (including .NET Standard 2.0) by adding primitive type overloads (`byte/sbyte/ushort/char/short/uint/int/ulong/long/float/double/decimal`).
@@ -211,7 +213,7 @@ For .NET 9 and above, `ValueEnumerable<T>` is a `ref struct` and cannot be conve
 
 Since `ValueEnumerable<T>` is not an `IEnumerable<T>`, it cannot be passed to methods that require `IEnumerable<T>`. It's also difficult to pass it to other methods due to the complex type signatures required by generics (implementation is explained in the [Custom Extensions](#custom-extensions) section). Using `ToArray()` is one solution, but this can cause unnecessary allocations in some cases. For temporary use, you can call `ToArrayPool` to pass to methods that require `IEnumerable<T>` without allocations. However, be careful that this `IEnumerable<T>` will be returned within the using scope, so you must ensure it doesn't leak outside the scope (storing it in a field is not allowed).
 
-`String.Join` has overloads for both `IEnumerable<string>` and `params object[]`. Passing `ValueEnumerable<T>` directly will select the `object[]` overload, which may not give the desired result. In this case, use the `JoinToString` operator instead.
+`String.Join` has overloads for both `IEnumerable<string>` and `params object[]`. Before .NET 9, passing `ValueEnumerable<T>` directly will select the `object[]` overload, which may not give the desired result. In this case, use the `JoinToString` operator instead. On .NET 9+ with C# 14, `String.Join` works as expected (see [`JoinToString`](#jointostringcharstring-separator)).
 
 `ValueEnumerable<T>` is a struct, and its size increases slightly with each method chain. With many chained methods, copy costs can become significant. When iterating over small collections, these copy costs can outweigh the benefits, causing performance to be worse than standard LINQ. However, this is only an issue with extremely long method chains and small iteration counts, so it's rarely a practical concern.
 
@@ -396,10 +398,9 @@ public class AddOnlyIntList2 : IValueEnumerable<AddOnlyIntList2.Enumerator, int>
 
     public void Add(int x) => list.Add(x);
 
-    public ValueEnumerable<FromValueEnumerable<Enumerator, int>, int> AsValueEnumerable()
+    public ValueEnumerable<Enumerator, int> AsValueEnumerable()
     {
-        // you need to write new(new(new())) magic.
-        return new(new(new(list)));
+        return new(new(list));
     }
 
     // `public` struct enumerator
@@ -972,7 +973,7 @@ public static class MyExtensions
         {
             if (e.TryGetNonEnumeratedCount(out var count))
             {
-                var array = GC.AllocateUninitializedArray<TSource>(count);
+                var array = GC.AllocateUninitializedArray<T>(count);
 
                 if (e.TryCopyTo(array, offset: 0))
                 {
@@ -991,7 +992,7 @@ public static class MyExtensions
             }
             else
             {
-                var builder = ImmutableArray.CreateBuilder<TSource>();
+                var builder = ImmutableArray.CreateBuilder<T>();
                 while (e.TryGetNext(out var current))
                 {
                     builder.Add(current);
